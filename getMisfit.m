@@ -12,7 +12,7 @@ Bz = get_field(S,x);
  
 error_bar = S.sd;
  
-m = (S.data - Bz)./S.sd;
+m = (S.data - Bz)./(2*S.sd);
  
 
 misfit = [m'*m, sqrt(m'*m/length(S.data))];

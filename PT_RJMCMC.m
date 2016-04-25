@@ -1,27 +1,41 @@
-function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
+function PT_RJMCMC(DataFile,outputFolder,loadState)
     
     %*** You need to specify these ***
     
     %data, frequencies used, depth of Rx, Tx, Azimuth, etc.
-    S_0 = load (inputConfigFile); 
+    S_0 = load (DataFile); 
     
-    %number of iterations
-    N = 500000;  %keep it to 500e3
+   
+    [~,FileRoot] = fileparts(DataFile);
+    
+%     %number of iterations
+%     N = 500000;  %keep it to 500e3
+    N = S_0.numIterations;
+ 
     %Acceptance ratios in MCMC chains calculated every so many steps
     ARwindow = 500;
+    
     %save every so many steps
-    saveWindow = 1000;%keep it to 1e4
+%     saveWindow = 10000; %keep it to 1e4
+    saveWindow = S_0.saveEvery;
+    
+    nDisplayEvery = 100;  % print message to screen
+    
     %number of parallel chains (and temperatures)
     nTemps = 12;
+    
     %inverse temperature B ladder
-    B = logspace(-log10(2.5),0,12);
+    B = logspace(-log10(2.5),0,nTemps);
+    
     %probability of swapping every count of the MCMC chain
     pSwap = 1;
+    
     %step sizes in model space in log10 resistivity, decreasing temperature
     %for update
     UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
     %for birth / death
     BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
+    
     %step sizes in model space depth in m, decreasing temperature
     %for move interface
     MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
@@ -50,6 +64,9 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
         return
     end
     
+    if exist(outputFolder) == 0
+        mkdir(outputFolder);
+    end
     
     if nargin~=3
         rng('default')
@@ -85,7 +102,7 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
     %initialize stuff and start point
     for ii=1:nTemps
         %status file for each chain
-        fid(ii) = fopen([outputFileNameRoot,'_',num2str(ii),'_status'], 'w');
+        fid(ii) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(ii),'_status'], 'w');
         fclose (fid(ii));
         
         AR{ii}(:) = {DummyAR};
@@ -116,8 +133,19 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
     end
     
     %start MCMC
+    tic;
+    tStart = tic;
+    
     while count<N
         count = count +1;
+        
+        if mod(count,nDisplayEvery) == 0 % display text to user
+           tLength      = toc(tStart);
+           aveIterRate     = tLength/count;
+           predictedEnd = (N-count)*aveIterRate/86400 + now;
+           fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
+           
+        end
         %see if swap
         if rand<pSwap
             
@@ -158,8 +186,9 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
         %start parallel tempering
         %one step 
         for jj=1:nTemps
+            
             if count==1;
-                fid(jj) = fopen([outputFileNameRoot,'_',num2str(jj),'_status'], 'a');
+                fid(jj) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(jj),'_status'], 'a');
             end
             
             %[x{jj},oldMisfit{jj},accepted{jj},Dist{jj}(count)] = MCMCstep(x{jj},oldMisfit{jj},accepted{jj},S{jj},B(jj));
@@ -182,7 +211,7 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
                  fprintf(fid(jj),'Birth: %2.2f Death: %2.2f Move: %2.2f Update: %2.2f\n\n',AR{jj}{idx}.bAR,AR{jj}{idx}.dAR,AR{jj}{idx}.mAR,AR{jj}{idx}.uAR);
             end
             fprintf(fid(jj),'File: %s %2d Step %4d Intfcs: %2d SE:%8g  RMS:%2.3f\n',...
-                    outputFileNameRoot,jj,count,k{jj},en(count,:,jj));
+                    outputFolder,jj,count,k{jj},en(count,:,jj));
         end%one step    
         
         %see if time to save
@@ -191,13 +220,13 @@ function PT_RJMCMC(inputConfigFile,outputFileNameRoot,loadState)
             loadState.x{ll} = x{ll};   
             loadState.Stream = RandStream.getGlobalStream;   
             s_ll = samples{ll}; k_ll = kTracker{ll}; en_ll = en(:,:,ll); D_ll = Dist{ll}; AR_ll = AR{ll}; S_ll=S{ll}; 
-            save ([outputFileNameRoot,'_',num2str(ll)],'s_ll','k_ll','en_ll','D_ll', 'AR_ll','S_ll','loadState')
+            save ([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(ll)],'s_ll','k_ll','en_ll','D_ll', 'AR_ll','S_ll','loadState')
           end
-          save ([outputFileNameRoot,'_swaps'],'swapCount') 
+          save ([outputFolder,'/',FileRoot,'_PT_RJMCMC','_swaps'],'swapCount') 
         end    
                
     end
-    %save (outputFileNameRoot)
+    %save (outputFolder)
 end
 
 

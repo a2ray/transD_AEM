@@ -1,5 +1,5 @@
 function [pdf_matrixH,pdf_matrixV,intfcCount,meanModelH,meanModelV,medianModelH,medianModelV,kOut] = ...
-    plot_rjmcmc_new_parallel(nProcs,samples,kTracker,burnin,thin,truth,binDepthInt,bits,isotropic,normalize,S)
+    plot_rjmcmc_new_parallel(nProcs,samples,kTracker,burnin,thin,binDepthInt,bits,isotropic,normalize,logPDF,S)
 
 %KWK debug:
 S.rhMin = S.log10rho_min;
@@ -7,6 +7,9 @@ S.rvMin = S.log10rho_min;
 S.rhMax = S.log10rho_max;
 S.rvMax = S.log10rho_max;
 S.isotropic = true;
+
+truth.z = S.ReferenceModel.z;
+truth.rhoh = S.ReferenceModel.rho;
 
 %%
 zFixed = S.z;
@@ -57,7 +60,7 @@ meanModelH         = zeros(nBins,1);meanModelV         = zeros(nBins,1);
 depth_int  = (S.zMax-zFixed(end))/nBins;
 
 parfor procInd = 1:nProcs
-    fid = fopen(['proc_',num2str(procInd),'_status'],'w');
+%     fid = fopen(['proc_',num2str(procInd),'_status'],'w');
     for ii=(1:length(s{procInd}))
         x=s{procInd}{ii};
         %get the interfaces
@@ -85,8 +88,9 @@ parfor procInd = 1:nProcs
                 histcellV{procInd}{binIndex}(c) = x.rhov(jj);
             end    
         end
-        if mod(ii,1000) == 0
-            fprintf(fid,'done %d out of %d\n',ii,length((s{procInd})));
+        if mod(ii,1000) == 0 & procInd == 1
+%             fprintf(fid,'done %d out of %d\n',ii,length((s{procInd})));
+	       fprintf('done %d out of %d\n',ii,length((s{procInd})));
         end
     end
 
@@ -147,7 +151,11 @@ for i=1:nBins
     [~,confidH(i,2)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.95,'legacy');
     [~,confidV(i,1)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.05,'legacy');
     [~,confidV(i,2)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.95,'legacy');
-    %find median model
+%     [~,confidH(i,1)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.01,'legacy');
+%     [~,confidH(i,2)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.99,'legacy');
+%     [~,confidV(i,1)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.01,'legacy');
+%     [~,confidV(i,2)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.99,'legacy');
+%find median model
      medianModelH(i) = median(tempH{i});
      medianModelV(i) = median(tempV{i});
 %      [~,maxH(i)]     = max(pdf_matrixH(i,:));
@@ -170,17 +178,26 @@ end
 
 hFig = figure;
 if strcmpi('isotropic',isotropic)
-   hRhov = subplot(1,2,1);
-   hInterfaces = subplot(1,2,2);
-else
    hRhov = subplot(1,3,1);
-   hRhoh = subplot(1,3,2);
-   hInterfaces = subplot(1,3,3);
+   hInterfaces = subplot(1,3,2);
+   hLayers = subplot(1,3,3);
+else
+   hRhov = subplot(1,4,1);
+   hRhoh = subplot(1,4,2);
+   hInterfaces = subplot(1,4,3);
+   hLayers = subplot(1,4,4);
 end
 
 
     axes(hRhov);
-    pcolor(edges,zFixed(end)+(0:nBins)*depth_int,[pdf_matrixV,pdf_matrixV(:,end);pdf_matrixV(end,:),pdf_matrixV(end,end)])
+    if strcmpi(logPDF,'logpdf')
+        dat = log10([pdf_matrixV,pdf_matrixV(:,end);pdf_matrixV(end,:),pdf_matrixV(end,end)]);
+        cbStr = 'log10(PDF)';
+    else
+        dat = ([pdf_matrixV,pdf_matrixV(:,end);pdf_matrixV(end,:),pdf_matrixV(end,end)]);
+        cbStr = 'PDF';
+    end
+    pcolor(edges,zFixed(end)+(0:nBins)*depth_int,dat)
     set (gca,'ydir','reverse','layer','top')
     shading flat
     hold on
@@ -190,13 +207,19 @@ end
     %  plot(medianModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
     % %  plot(modeModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
     %   plot(meanModelV,  S.zMin+depth_int/2+(0:nBins-1)*depth_int,'*-y')
-    title ('Vertical resistivity')
+    if ~strcmpi(isotropic,'isotropic')
+        title ('Vertical Resistivity')
+    else
+        title ('Resistivity')
+    end
     xlabel ('Log_{10} (ohm-m)')
     %caxis ((2*[-sqrt(var(pdf_matrixV(:))),sqrt(var(pdf_matrixV(:)))]+mean(pdf_matrixV(:))));
     h=caxis;
     depthlim=ylim;
     hold on
      ylabel ('Depth (m)','fontsize',11);
+        caxis([-3 0])
+     
 if ~strcmpi(isotropic,'isotropic')
     axes(hRhoh);
     pcolor(edges,zFixed(end)+(0:nBins)*depth_int,[pdf_matrixH,pdf_matrixH(:,end);pdf_matrixH(end,:),pdf_matrixH(end,end)])
@@ -215,11 +238,13 @@ if ~strcmpi(isotropic,'isotropic')
     %   plot(meanModelH,  S.zMin+depth_int/2+(0:nBins-1)*depth_int,'*-y')
 
     hold on
+ 
+    
 end
 %caxis(h);
 h1=colorbar;
-set(h1, 'Position', [.03 .11 .01 .8150])
-%set(get(h1,'xlabel'),'String', 'PDF','fontsize',11,'interpreter','tex');
+set(h1, 'Position', [.05 .11 .01 .8150])
+set(get(h1,'ylabel'),'String', cbStr,'fontsize',11,'interpreter','tex');
  
 
 %freezeColors
@@ -252,13 +277,13 @@ if ~isempty(truth)
     
     if ~strcmpi(isotropic,'isotropic')
         subplot (hRhoh);
-        plot_model(S,truth,2,'m--');
+        plot_Truth(S,truth,2,'m--');
         hold on
     end
 
     %plot rhoh
     subplot (hRhov);
-    plot_model(S,truth,2,'m--') ;
+    plot_Truth(S,truth,2,'m--') ;
     hold on
 
 end
@@ -268,14 +293,14 @@ end
 colormap('parula')
 
 %plot hist of number of layers
-figure
+axes(hLayers)
 [a,b]=hist(kOut,S.kMin:S.kMax);
 bar(b,a/sum(a)/(b(2)-b(1)))
 hold on 
 plot ([0 max(b)],(S.kMax-S.kMin+1)^-1*ones(1,2),'--k')
 xlabel ('Number of interfaces','fontsize',11)
 xlim([0,S.kMax])
-ylim([0,10*(S.kMax-S.kMin+1)^-1])
+%ylim([0,10*(S.kMax-S.kMin+1)^-1])
 set(gca, 'fontsize',11)
 ylabel ('Probability of interfaces','fontsize',11)
 %set(gcf, 'Units','inches', 'Position',[0 0 3.3 2])
@@ -311,3 +336,29 @@ end
 %         plot(log10([plotrhoh';plotrhoh(end)]),([plotz,S.zMax]),'-k','linewidth',lw)
 %     end
 % end 
+
+
+function h = plot_Truth(S,x,lw,lc)
+    if nargin<4
+        lw = 1;
+    end
+ 
+    numInt = length(x.z);
+     
+    z   = x.z;
+    rho = x.rhoh; 
+    %[earthmodel(S.numlayers+1:2*S.numlayers)]; %;earthmodel(2*S.numlayers+1:3*S.numlayers)];
+    plotz=[];
+    plotz(1)=z(2);
+    plotrhoh=[];plotrhov=[];
+    for k=2:length(z)-1
+        plotz(2*k-2)=z(k+1);plotz(2*k-1)=z(k+1);
+        plotrhoh(2*k-3)=rho(1,k);plotrhoh(2*k-2)=rho(1,k);
+        %plotrhov(2*k-3)=rho(2,k);plotrhov(2*k-2)=rho(2,k);
+    end
+    plotrhoh(2*k-1)=rho(1,end);%plotrhov(2*k-1)=rho(2,end);hold all
+ 
+       h =  plot(log10([plotrhoh';plotrhoh(end)]),([plotz,S.zMax]),lc,'linewidth',lw);
+%     end
+end    
+
