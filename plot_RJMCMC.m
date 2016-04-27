@@ -201,8 +201,8 @@ end
     set (gca,'ydir','reverse','layer','top')
     shading flat
     hold on
-      plot(edges(1)+confidV(:,1)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',1)
-      plot(edges(1)+confidV(:,2)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',1)
+      plot(edges(1)+confidV(:,1)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',2)
+      plot(edges(1)+confidV(:,2)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',2)
     %  plot(edges(1)+rho_int/2+(maxV-1)*rho_int,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'m')
     %  plot(medianModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
     % %  plot(modeModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
