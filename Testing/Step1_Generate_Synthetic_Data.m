@@ -34,8 +34,8 @@ maxThickness = 500;
 log10rho_min = -1;  % min log10(resistivity). You shouldn't need to change these.
 log10rho_max = 5;   % max log10(resistivity). You shouldn't need to change these.
 
-numIterations = 500000;  % 100,000 Number of RJ-MCMC iterations to carry out (should be at least 100,000)
-saveEvery     = 100;  % 10,000 RJ-MCMC models from each parallel tempering chain are save every N iterations (should be at least 10000)
+numIterations = 50000;  % 100,000 Number of RJ-MCMC iterations to carry out (should be at least 100,000)
+saveEvery     = 1000;   % 10,000 RJ-MCMC models from each parallel tempering chain are save every N iterations (should be at least 10000)
 
 
 ReferenceModel.z   = z;     % Reference model used in plotting code. Store the "truth" here, or the LCI inversion model if you want to overlay it on the Bayesian result
@@ -55,21 +55,25 @@ outputFolder = 'Test_SynthData';  % Name of folder to store PT_RJMCMC results
 %
 % Some numerial parameters used by the forward code (don't change these):
 %
-nFreqsPerDecade = 5;
-HankelFilterName = 'kk51Hankel.txt';
-CosSinFilterName = 'kk101CosSin.txt';
+nFreqsPerDecade = 15;
+HankelFilterName = 'kk201Hankel.txt';
+CosSinFilterName = 'kk201CosSin.txt';
 mu = ones(size(sig)); % relative magnetic permeability of each layer. Set this to 1 always!
+
 
 % 
 % Compute the model response, which is normalized by loop dipole moment, so
 % Bz has units T/(Am^2) = Vs/(Am^4)
 % Note Bz returned below is actually dBz/dt, so the units are V/(Am^4)
 %
-Bz = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade);    
-                     
+
+rampTime = [0 1; 5d-6 0.5;  10d-6 0]; 
+tic
+Bz = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime);    
+toc                      
 % For comparison, make another model with no conductive layers:                     
-sig_resistor = [1d-12  1/1000 1/1000 1/1000 1/1000];                       
-Bz_resistor  = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig_resistor,mu,z,HankelFilterName,CosSinFilterName,nFreqsPerDecade);            
+sig_resistor = [1d-12  1/1000 1/1000 1/1000 1/1000];      
+Bz_resistor  = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig_resistor,mu,z,HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime);            
 
 %
 % Add noise to create synthetic noisy data:
