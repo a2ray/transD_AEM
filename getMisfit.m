@@ -1,20 +1,23 @@
 
 %Large Loop misfit function
 function misfit = getMisfit(x,S)
-
-misfit = zeros(1,2);%for chi2 and RMS
-
-%data usually ordered as [Er,Hb,Ez,Eb,Hr,Hz];
-data = S.data;
-
+ 
 % Get Bz for loop source:
 Bz = get_field(S,x);
  
-error_bar = S.sd;
- 
-m = (S.data - Bz)./(2*S.sd);
- 
+if isfield(S,'data')  % Simple format
+    
+    data = S.data;
+    error_bar = 2*S.sd;
 
-misfit = [m'*m, sqrt(m'*m/length(S.data))];
+else % SkyTEM High and Low Mode data:
+    
+    data = [S.HighMode.data S.LowMode.data];
+    error_bar = 2*[S.HighMode.sd S.LowMode.sd]; 
+   
+end
 
+    m = (abs(data(:)) - abs(Bz(:)))./(error_bar(:));
+    misfit = [m'*m, sqrt(m'*m/length(error_bar))];
+    
 end

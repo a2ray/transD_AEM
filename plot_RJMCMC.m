@@ -26,7 +26,7 @@ k = s; intfVec = s; binCount = s;
 
 %initialize cells that will grow in the second dimension, each proc 
 %processes 1/nProc samples
-histcellH = cell(nProcs,1); confidH=zeros(nBins,2);
+histcellH = cell(nProcs,1); confidH=zeros(nBins,2);confidH_New=zeros(nBins,2);
 histcellV = cell(nProcs,1); confidV=zeros(nBins,2);
 
 histcellH(:) = {cell(nBins,1)};
@@ -151,6 +151,23 @@ for i=1:nBins
     [~,confidH(i,2)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.95,'legacy');
     [~,confidV(i,1)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.05,'legacy');
     [~,confidV(i,2)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.95,'legacy');
+    
+    cdfL = cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:));
+    ind = find(cdfL<0.05,1,'last');
+    if isempty(ind) || ind == 1
+        confidH_New(i,1) = edges(1);
+    else
+        confidH_New(i,1) = edges(ind); %interp1(cdf(ind-1:ind),edges(ind)rho_int/2,0.05);
+    end
+    cdfR = cumsum(fliplr(pdf_matrixH(i,:)))/sum(pdf_matrixH(i,:));
+    ind = find(cdfR<0.05,1,'last');
+    edgesR = fliplr(edges);
+    if  isempty(ind) || ind == 1
+        confidH_New(i,2) = edgesR(1);
+    else
+        confidH_New(i,2) =  edgesR(ind); %interp1(cdf(ind-1:ind),edges(ind-1:ind)+rho_int/2,0.95);
+    end
+  
 %     [~,confidH(i,1)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.01,'legacy');
 %     [~,confidH(i,2)]=ismember (0,cumsum(pdf_matrixH(i,:))/sum(pdf_matrixH(i,:))>= 0.99,'legacy');
 %     [~,confidV(i,1)]=ismember (0,cumsum(pdf_matrixV(i,:))/sum(pdf_matrixV(i,:))>= 0.01,'legacy');
@@ -201,8 +218,12 @@ end
     set (gca,'ydir','reverse','layer','top')
     shading flat
     hold on
-      plot(edges(1)+confidV(:,1)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',2)
-      plot(edges(1)+confidV(:,2)*rho_int,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',2)
+%       plot(edges(1)+confidV(:,1)*rho_int-rho_int/2,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'r','linewidth',2)
+%       plot(edges(1)+confidV(:,2)*rho_int+rho_int/2,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'r','linewidth',2)
+       plot(confidH_New(:,1),zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'r','linewidth',2)
+       plot(confidH_New(:,2),zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'r','linewidth',2)
+
+
     %  plot(edges(1)+rho_int/2+(maxV-1)*rho_int,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'m')
     %  plot(medianModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
     % %  plot(modeModelV,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'.-r')
@@ -273,7 +294,7 @@ title ('Interface depth')
 %plot truth
 %plot rhov
 
-if ~isempty(truth)
+if ~isempty(truth) && ~isempty(truth.z)
     
     if ~strcmpi(isotropic,'isotropic')
         subplot (hRhoh);
