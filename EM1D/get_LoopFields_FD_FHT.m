@@ -33,34 +33,34 @@ function [Bz] = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterN
     %
     for iRx = 1:length(rRx)
 
-
         rRxEval = rRx(iRx);
 
         % FHT:
         if rRxEval < rTxLoop
+            
             lTxClose    = true;
             lambda      = Filter.base/rTxLoop;    
             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);     
-            Bz          = sum(BzK.*FJ1,1)/rTxLoop;           
+            Bz(iRx,:)   = sum(BzK.*FJ1,1)/rTxLoop;   
+            
         else
             lTxClose    = false;  
             
             % non-spline:
              lambda      = Filter.base/rRxEval; 
-             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);
-             
+             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);             
             % spline: % Testing only, could result in dicey responses...
 %             lambdaSp = 10.^[min(log10(lambda))-.5:1/8:max(log10(lambda))+.5]'; 
 %             BzK    = getBzKernel(freqs,z,sig,mu,lambdaSp,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);
 %             PP = spline(log10(lambdaSp),BzK.'); 
 %             BzK  = ppval(PP,log10(lambda)).'; 
- 
-            Bz          = sum(BzK.*FJ0,1)/rRxEval;          
+            Bz(iRx,:)   = sum(BzK.*FJ0,1)/rRxEval;  
+            
         end
 
 
         % Normalize by dipole moment, apply pre-coefficients too          
-        Bz  =  rTxLoop*mu(1)*mu0*Bz / (pi*rTxLoop^2);      
+        Bz(iRx,:)  =  rTxLoop*mu(1)*mu0*Bz(iRx,:)/ (pi*rTxLoop^2);      
 
 
     end % loop over receivers
@@ -199,8 +199,10 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
 
     BzKernel   = squeeze(Fz.*LAM(1,:,:).^2);
     
+    if size(BzKernel,1) == 1
+        BzKernel = BzKernel';
+    end
     if lTxClose
-   
         bess = besselj(0,lambda*rRxEval);
         Bz   =  BzKernel.*repmat( bess,1,length(freqs));
     else

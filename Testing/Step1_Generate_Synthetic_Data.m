@@ -81,6 +81,7 @@ Bz_resistor  = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig_resistor,mu,z,Han
 noise = randn(size(Bz))*noiseToAdd.*abs(Bz);
 data  = Bz + noise;
 sd    = noiseToAdd.*abs(Bz);  
+Ramp = rampTime;
 
 %
 % Plot SkyTEM responses:                     
@@ -144,7 +145,7 @@ end
 save(DataFile,'data','sd','times','rTx','zTx','rRx','zRx', ...
               'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
               'rho','z','kMin','kMax','zMin','zMax','log10rho_min',...
-              'log10rho_max','ReferenceModel','numIterations','saveEvery');
+              'log10rho_max','ReferenceModel','numIterations','saveEvery','Ramp');
 
 
 
