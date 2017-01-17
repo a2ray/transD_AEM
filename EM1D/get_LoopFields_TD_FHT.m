@@ -1,15 +1,57 @@
-function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
+function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
                             HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime,lowPassFilters)
 %
-% Notes:
-%           rampTime - (s) single number of ramp-off time or piecewise linear model
-%                       of [time, normalized_current] where the first row should be
-%                       [0,1] and last row should be [tlast, 0]. For
-%                       example for a ramp down over 0.00001 s:
-%                      rampTime  = [0,1;  0.00001,0.6;  0.00002,0.2; 0.00001,0.0];
-%           *** Assumes time 0 is start of ramp. ****
+% Computes the time domain response of the vertical magnetic field for a
+% large loop source. 
 %
-% KWK debug: Help text needs to be updated for new code...
+% Usage:
+%
+% dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
+%                            HankelFilterName,CosSinFilterName,nFreqsPerDecade,
+%                            rampTime,lowPassFilters)
+%
+%
+% Inputs:
+%
+% times      - time offsets for TDEM responses [s]. Can be array of values or single value.
+% rTxLoop    - radius of transmitter loop. [m]. single value
+% zTx        - vertical position of transmitter loop (positive down). [m]
+% rRx        - horizontal range(s) to the receiver(s). [m]. Can be array of values or single value.
+% zRx        - vertical position of receiver(s) (positive down). [m]. Can be array of values or single value.
+% sig        - array of conductivities for each layer. [S/m]
+% mu         - array of relative magnetic permeabilities for each layer.
+%              Normally this is just an array of ones.
+% z          - vertical position of the top of each layer. [m]. Note that z
+%              is positive down. Use a dummy value for the topmost layer. 
+% HankelFilterName - Digital filter coefficients to use for the Hankel Transform.
+%                    Options: 'kk201Hankel.txt', 'kk101Hankel.txt', 'kk51Hankel.txt'
+%                    Use 'kk201Hankel.txt' to play it safe. Only use the shorter
+%                    101 or 51 point filters if you know what you are doing and
+%                    have proven that they are accurate for your setup and model
+%                    parameters.
+% CosSinFilterName - Digital filter coefficients to use for the Fourier (Co)Sine Transforms.
+%                    Options: 'kk201CosSin.txt', 'kk101CosSin.txt'
+%                    Use 'kk201CosSin.txt' to play it safe. Only use the shorter
+%                    101 point filters if you know what you are doing and
+%                    have proven that they are accurate for your setup and model
+%                    parameters.
+% nFreqsPerDecade  - Number of frequencies per decade for sampling the
+%                    frequency domain response prior to its time domain
+%                    transformation. 10 is usually a safe value to use.
+% rampTime         - Time and amplitude sequence of the transmitter waveform:
+%                    [t0, a0; t1,a1; t2,a2;....tlast,0]
+%                    example: [0 1; 1d-4 0] is a 1d-4s ramp off. More
+%                    complicated waveforms with ramp-up at negative times
+%                    are possible (for example SkyTEM waveform).
+% lowPassFilters   - Array of corner frequencies[Hz] for any low-pass filters
+%                    to apply. e.g. [ 4.500E+05  3.000E+05 ]
+%
+%
+%
+% Output:
+%
+% dBzdt         -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
+%
 % 
 %
 % Written by:
@@ -32,20 +74,30 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
 % 
 % Parse inputs:
 %
+    if ~exist('nFreqsPerDecade','var')
+        nFreqsPerDecade = 10;
+    end
     if ~exist('lowPassFilters','var')
         lowPassFilters = [];
     end
+    if ~exist('rampTime','var')
+        rampTime = [];
+    end
+    
 %
 % Step 1: Get frequency domain fields for a broad sweep:
 %
 
     freqs = 10.^(log10(freqLowLimit):1/nFreqsPerDecade:log10(freqHighLimit)); 
 
-  % BzFD = get_LoopFields_FD_FHT(freqs,rTx,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
+  % Perfectly circular loop:   
+   BzFD = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
     
-   BzFD = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
-%
+  % Kernel for a point dipole - this still needs to have a Gauss quadrature wrapper for 
+  % integrating over polygon of arbitrary loop source.
+  % BzFD = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
 
+  
 %
 % Step 1b: Apply front end filters, if input:
 %
@@ -77,10 +129,10 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
     Filter.SinFilt = A(:,3);
            
 %
-% Initialize output Bz:
+% Initialize output dBzdt:
 %
    
-    Bz = zeros(length(times),length(rRx));
+    dBzdt = zeros(length(times),length(rRx));
     
     log10omega = log10(2*pi*freqs); % compute splines in log10(omega) domain for stability
  
@@ -118,7 +170,7 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
 
                 BzFpp  = ppval(PP,w); % get Bz at angular log10 freqs in w
 
-                %kwk debug:BzFpp = get_LoopFields_FD_FHT(Filter.base/t/(2*pi),rTx,zTx,rRx,zRx,sig,mu,z,HankelFilterName).';
+                %kwk debug:BzFpp = get_LoopFields_FD_FHT(Filter.base/t/(2*pi),rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName).';
                
                 BzFpp  = -imag(BzFpp)*2/pi; % scale for impulse response
 
@@ -126,7 +178,7 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
                 % Multiply kernels by filter weights and sum them all up,
                 % remembering to divide by the particular time offset:
                 %
-                Bz(itime,iRx)  = sum(BzFpp.*Filter.SinFilt)/t;
+                dBzdt(itime,iRx)  = sum(BzFpp.*Filter.SinFilt)/t;
                 
              end
             
@@ -176,7 +228,7 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
             for itime = 1:length(timesIn)
                 
                 
-                Bz(itime,iRx) = 0;
+                dBzdt(itime,iRx) = 0;
                
                 for iRamp = 1:size(rampTime,1)-1   
                     
@@ -204,9 +256,8 @@ function [Bz] = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z,...
                     a = log10(ta);
                     b = log10(tb);
                     f = @getRampResp;
-                    %Bz(itime,iRx) = Bz(itime,iRx) + quadgk(f,a,b,'AbsTol',1e-20,'RelTol',1e-4)*dIdt;  
-                    
-                    Bz(itime,iRx) = Bz(itime,iRx) + (b-a)/2*sum( f( (b-a)/2*x+(a+b)/2).*w)*dIdt;
+               
+                    dBzdt(itime,iRx) = dBzdt(itime,iRx) + (b-a)/2*sum( f( (b-a)/2*x+(a+b)/2).*w)*dIdt;
                 end
 
             end
