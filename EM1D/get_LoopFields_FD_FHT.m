@@ -1,7 +1,34 @@
-function [Bz] = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
+
+function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
 %
-% KWK debug: Help text needs to be updated for new code...
+% Usage:
+%
+% Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
+%
+%
+% Inputs:
+%
+% freqs      - frequency(ies) [Hz]. Can be array of values or single value.
+% rTxLoop    - radius of transmitter loop. [m]. single value
+% zTx        - vertical position of transmitter loop (positive down). [m]
+% rRx        - horizontal range(s) to the receiver(s). [m]. Can be array of values or single value.
+% zRx        - vertical position of receiver(s) (positive down). [m]. Can be array of values or single value.
+% sig        - array of conductivities for each layer. [S/m]
+% mu         - array of relative magnetic permeabilities for each layer.
+%              Normally this is just an array of ones.
+% z          - vertical position of the top of each layer. [m]. Note that z
+%              is positive down. Use a dummy value for the topmost layer. 
+% filterName - Digital filter coefficients to use for the Hankel Transform.
+%              Options: 'kk201Hankel.txt', 'kk101Hankel.txt', 'kk51Hankel.txt'
+%              Use 'kk201Hankel.txt' to play it safe. Only use the shorter
+%              101 or 51 point filters if you know what you are doing and
+%              have proven that they are accurate for your setup and model
+%              parameters.
 % 
+% Output:
+%
+% Bz         -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
+%
 %
 % Written by:
 %
@@ -76,6 +103,8 @@ end
 %--------------------------------------------------------------------------
 function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop) 
     
+    epsilon = 8.8541878176d-12;
+        
     dz        = diff(z);
     nz        = length(z);
     hh        = [1d60 dz(2:end) 1d60];
@@ -108,7 +137,7 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     [~,HH,~]  = meshgrid(lambda,hh,freqs);     
     
  
-    gamma = sqrt(LAM.^2 - 1i*2*pi*FREQ*mu0.*MU.*SIG);
+    gamma = sqrt(LAM.^2 - 1i*2*pi*FREQ*mu0.*MU.*(SIG - 1i*2*pi*FREQ*epsilon));
     
     %
     % Compute layer decay coefficients:
@@ -139,7 +168,7 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     for i = 2:iTxlayer
         Rm(i-1,:,:) = Rm(i-1,:,:).*expgh(i-1,:,:);  % post applied to avoid positive exp in a,b formulation 
         Rm(i,:,:)   = ( rm(i,:,:) +       Rm(i-1,:,:).*expgh(i-1,:,:)) ./ ...
-                  (    1     + rm(i,:,:).*Rm(i-1,:,:).*expgh(i-1,:,:));
+                      ( 1    + rm(i,:,:).*Rm(i-1,:,:).*expgh(i-1,:,:));
     end
 
     %
