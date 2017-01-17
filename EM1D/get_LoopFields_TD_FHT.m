@@ -1,7 +1,7 @@
 function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
                             HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime,lowPassFilters)
 %
-% Computes the time domain response of the vertical magnetic field for a
+% Computes the vertical magnetic field time-domain response for a
 % large loop source. 
 %
 % Usage:
@@ -50,9 +50,9 @@ function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
 %
 % Output:
 %
-% dBzdt         -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
+% dBzdt         - time derivative of the vertical magnetic field V/(Am^4). Dimensions: (length(times),length(rRx))
+%                 Note that dBzdt (V/m^2) is normalized by the dipole moment (Am^2) to give V/(Am^4) 
 %
-% 
 %
 % Written by:
 %
