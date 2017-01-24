@@ -72,7 +72,8 @@ end
 %normalize by the area of the loop
 I = I/A;
 I2 = I2/A;
-Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName);
-keyboard
+BzCircle = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName);
+Bz = I2;
+%keyboard
 
 
