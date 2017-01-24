@@ -168,8 +168,8 @@ zRxHM = -30.19;         % m, reciever coil vertical position (use same datum as 
 %
 % Some numerial parameters used by the forward code (don't change these):
 %
-nFreqsPerDecade = 40;
-LoopQuadOrder   = 4;   % Gauss quadrature order for polygon loop integration
+nFreqsPerDecade = 10;
+LoopQuadOrder   = 1;   % Gauss quadrature order for polygon loop integration
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
 mu = ones(size(sig)); % relative magnetic permeability of each layer. Set this to 1 always!
