@@ -22,12 +22,12 @@ HankelFilterName = 'kk201Hankel.txt';
 vertices = [ -15.09 -2.00 ; -8.11 -10.16 ; 8.11 -10.16 ; 15.09 -2.00 ; 15.09 2.00 ;...
         8.11 10.16 ; -8.11 10.16 ; -15.09 2.00 ; -17.00 0.00 ];
     
-GQorder = 4;
+GQorder = 2;
 
-Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
+%Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
 
 tic
 BzFD = get_PolygonFields_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName,vertices,GQorder,A);
 toc
 
-norm(Bz-BzFD)
+%norm(Bz-BzFD)
