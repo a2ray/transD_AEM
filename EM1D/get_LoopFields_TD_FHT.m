@@ -188,7 +188,7 @@ function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
 
             timesIn = times;
  
-            times = 10.^[min(log10(timesIn))-1:1/nTimesPerDecade:max(log10(timesIn))+1]; 
+            times = 10.^(min(log10(timesIn))-1:1/nTimesPerDecade:max(log10(timesIn))+1); 
 
             BzP = zeros(length(times),1);
 
