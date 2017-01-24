@@ -45,14 +45,14 @@ for k=1:nvertices
      
     %compute the Gauss quadrature points and weights for this triangle
     %method 1
-    [X,Y,Wx,Wy]=triquad(GQorder,v);
+    %[X,Y,Wx,Wy]=triquad(GQorder,v);
     %method 2
     [x,w] = simplexquad(GQorder,v);
 
     %kwk debug: plot triangles and quad points:    
      plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
      plot(x(:,1),x(:,2),'o'); hold on
-      plot(X,Y,'+'); hold on
+   %   plot(X,Y,'+'); hold on
   
     
 % KWK debug R is just horizontal range to receiver!
