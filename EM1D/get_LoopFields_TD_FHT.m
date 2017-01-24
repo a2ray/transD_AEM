@@ -95,8 +95,19 @@ function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
     
   % Kernel for a point dipole - this still needs to have a Gauss quadrature wrapper for 
   % integrating over polygon of arbitrary loop source.
-  % BzFD = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
-
+  BzFD_VMD = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
+  
+  %specify vertices of polygon loop
+  vertices = [ -15.09 -2.00 ; -8.11 -10.16 ; 8.11 -10.16 ; 15.09 2.00 ; 15.09 2.00 ;...
+        8.11 10.16 ; -8.11 10.16 ; -15.09 2.00 ];
+  %specify order of Gauss quadrature that you want
+  GQorder = 2;
+  %get fields for a polygon loop
+  A = 488;
+  BzFD_Poly = get_PolygonFields_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName,vertices,GQorder,A);
+  %keyboard
+  
+  BzFD = BzFD_Poly;
   
 %
 % Step 1b: Apply front end filters, if input:
