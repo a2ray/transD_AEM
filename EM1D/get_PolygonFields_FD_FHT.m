@@ -21,18 +21,14 @@ centerPoly = mean(xyPolyTx);
 %number of polygon vertices 
 nvertices = size(xyPolyTx,1);
 
+%number of frequencies
 nf = length(freqs);
+
 %initialize the value of the integral to zero
-%method 1
 I = zeros(1,nf);
-%method 2
-I2 = I;
-%method 3
-I3 = I;
 
 %kwk debug: plot triangles:
 figure;
-
 
 %loop over the number of triangles = the number of polygon vertices
 for k=1:nvertices
@@ -43,15 +39,8 @@ for k=1:nvertices
         v = [ xyPolyTx(k,:) ; xyPolyTx(k+1,:) ; centerPoly ];
     end
     
-
-     
     %compute the Gauss quadrature points and weights for this triangle
-    %method 1
-    [X,Y,Wx,Wy]=triquad(GQorder,v);
-    %method 2
-    [x,w] = simplexquad(GQorder,v);
-    %method 3
-    %get Gauss points and weights on the standard triangle
+    %get Gauss points and weights on the standard triangle first
     xw = TriGaussPoints(GQorder);
     %convert to our coordinates
     for l=1:size(xw(:,1))
@@ -61,61 +50,29 @@ for k=1:nvertices
 
     %kwk debug: plot triangles and quad points:    
      plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
-     plot(x(:,1),x(:,2),'o'); hold on
-      plot(X,Y,'+'); hold on
       plot(x_,y_,'*')
-  
-    
-% KWK debug R is just horizontal range to receiver!
-% Rz = ones(GQorder)*(zRx - zTx); 
-   % R = sqrt((X-xyRx(1)).^2 + (Y-xyRx(2)).^2);  %+ (Rz).^2).^(0.5);
-    
-    %compute vector of distances (for I2)
-    %keyboard
-    distRx = sqrt( (x(:,1) - xyRx(1)).^2 + ...
-                   (x(:,2) - xyRx(2)).^2 ); 
+   
+    %compute distances (horizontal range only from each integration point to receiver
     distRx_ = sqrt( (x_ - xyRx(1)).^2 + ...
                    (y_ - xyRx(2)).^2 ); 
     
-    %evaluate the vertical magnetic dipole at each integration point
-    %method 2
-    for l=1:length(distRx)
-        I2 = I2 + get_VMD_FD_FHT(freqs,zTx,distRx(l),zRx,sig,mu,z,filterName)*w(l);
-    end
-    %method 3
-    tmp = 0.0*I3;
+    %perform numerical integration (evaluate vertical magnetic dipole at
+    %each integration point and multiply by its integration weight)
+    tmp = 0.0*I;
     for l=1:length(distRx_)
         tmp = tmp + get_VMD_FD_FHT(freqs,zTx,distRx_(l),zRx,sig,mu,z,filterName)*xw(l,3);
     end
     tmp = tmp*polyarea(v(:,1),v(:,2));
-    I3 = I3 + tmp;
-    %method 1
-%     feval = zeros(size(R,1),size(R,2),nf);
-%     for l=1:size(R,1)
-%         for m=1:size(R,2)
-%             feval(l,m,:) = get_VMD_FD_FHT(freqs,zTx,R(l,m),zRx,sig,mu,z,filterName);
-%         end
-%     end
-%     %compute the integral over this triangle (finally!)
-%     for j=1:nf
-%         I(j) = I(j) + Wx'*feval(:,:,j)*Wy;
-%     end
+    I = I + tmp;
     %on to the next triangle!
 end
 
 % normalize by true polygon area:
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
 
-%I = I/area;
-I2 = I2/area;
-I3 = I3/area;
-keyboard
-% BzCircle = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName);
-Bz = I3;
+I = I/area;
+
+Bz = I;
  
-
-
-
-%keyboard
 
 
