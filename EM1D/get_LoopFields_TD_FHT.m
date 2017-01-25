@@ -1,5 +1,6 @@
-function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
-                            HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime,lowPassFilters)
+function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
+                            HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampTime,lowPassFilters)
+ 
 %
 % Computes the vertical magnetic field time-domain response for a
 % large loop source. 
@@ -92,23 +93,10 @@ function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
 
   % Perfectly circular loop:   
   % BzFD = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
-    
-  % Kernel for a point dipole - this still needs to have a Gauss quadrature wrapper for 
-  % integrating over polygon of arbitrary loop source.
-  % BzFD_VMD = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
-  
-  %specify vertices of polygon loop
-  vertices = [ -15.09 -2.00 ; -8.11 -10.16 ; 8.11 -10.16 ; 15.09 -2.00 ; 15.09 2.00 ;...
-        8.11 10.16 ; -8.11 10.16 ; -15.09 2.00 ];
-  %specify order of Gauss quadrature that you want
-  GQorder = 1;
-  %get fields for a polygon loop
-  A = 488;
-  BzFD_Poly = get_PolygonFields_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,HankelFilterName,vertices,GQorder,A);
-  %keyboard
-  
-  BzFD = BzFD_Poly;
-  
+
+  % Kernel for polygon loop:  
+    BzFD = get_PolygonFields_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
+ 
 %
 % Step 1b: Apply front end filters, if input:
 %
@@ -143,17 +131,15 @@ function dBzdt = get_LoopFields_TD_FHT(times,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
 % Initialize output dBzdt:
 %
    
-    dBzdt = zeros(length(times),length(rRx));
+    dBzdt = zeros(length(times),size(BzFD,1));
     
     log10omega = log10(2*pi*freqs); % compute splines in log10(omega) domain for stability
  
 %
 % Loop over receivers
 %
-    for iRx = 1:length(rRx)
-        
-        rRxEval = rRx(iRx);
-        zRxEval = zRx(iRx);
+    for iRx = 1:size(BzFD,1)
+
             
         %
         % Compute the spline coefficients of the frequency domain solution
