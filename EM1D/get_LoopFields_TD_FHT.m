@@ -15,9 +15,9 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 % Inputs:
 %
 % times      - time offsets for TDEM responses [s]. Can be array of values or single value.
-% rTxLoop    - radius of transmitter loop. [m]. single value
+% xyPoly     - x,y points of transmitter loop (n x 2 array). [m]
 % zTx        - vertical position of transmitter loop (positive down). [m]
-% rRx        - horizontal range(s) to the receiver(s). [m]. Can be array of values or single value.
+% xyRx       - x,y location of receiver(s). One receiver per row. [m]
 % zRx        - vertical position of receiver(s) (positive down). [m]. Can be array of values or single value.
 % sig        - array of conductivities for each layer. [S/m]
 % mu         - array of relative magnetic permeabilities for each layer.
@@ -39,6 +39,7 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 % nFreqsPerDecade  - Number of frequencies per decade for sampling the
 %                    frequency domain response prior to its time domain
 %                    transformation. 10 is usually a safe value to use.
+% LoopQuadOrder    - quadrature order to use for polygon loop integral
 % rampTime         - Time and amplitude sequence of the transmitter waveform:
 %                    [t0, a0; t1,a1; t2,a2;....tlast,0]
 %                    example: [0 1; 1d-4 0] is a 1d-4s ramp off. More
@@ -85,10 +86,19 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
         rampTime = [];
     end
     
+   % Adust frequency range to cover min/max times:
+    if freqHighLimit <= 2/min(times)
+        freqHighLimit = 10/min(times);
+    end
+    if freqLowLimit >= 1/max(times)/2
+       freqLowLimit =  1/max(times)/10;
+    end
+    
 %
 % Step 1: Get frequency domain fields for a broad sweep:
 %
-
+     
+    
     freqs = 10.^(log10(freqLowLimit):1/nFreqsPerDecade:log10(freqHighLimit)); 
 
   % Perfectly circular loop:   

@@ -15,16 +15,22 @@ zTx     = -30;
 zRx     = -31.90;
 xyRx    = [-17 0]; 
 
-xyPolyTx = [ -15.09 -2.00 ; -8.11 -10.16 ; 8.11 -10.16 ; 15.09 -2.00 ; 15.09 2.00 ;...
-               8.11 10.16 ; -8.11  10.16 ; -15.09 2.00 ];
+xyPolyTx = [ -15.09 -2.00 ; 
+             -8.11 -10.16 ;
+              8.11 -10.16 ; 
+             15.09  -2.00 ;
+             15.09   2.00 ;
+              8.11  10.16 ; 
+             -8.11  10.16 ; 
+             -15.09  2.00 ];
            
 HankelFilterName = 'kk201Hankel.txt';    
-GQorder        = 3;
+GQorder        = 2;
 
 
 % For testing far field solution, make the transmitter polygon tiny so that
 % it looks like a point dipole at the receiver location:
-xyPolyTx    = xyPolyTx/100;    
+%xyPolyTx    = xyPolyTx/100;    
 % Then the fields should be nearly the same (<< 1% difference). 
 
 % Polyon transmitter:
