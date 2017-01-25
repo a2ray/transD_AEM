@@ -86,10 +86,19 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
         rampTime = [];
     end
     
+   % Adust frequency range to cover min/max times:
+    if freqHighLimit <= 2/min(times)
+        freqHighLimit = 10/min(times);
+    end
+    if freqLowLimit >= 1/max(times)/2
+       freqLowLimit =  1/max(times)/10;
+    end
+    
 %
 % Step 1: Get frequency domain fields for a broad sweep:
 %
-
+     
+    
     freqs = 10.^(log10(freqLowLimit):1/nFreqsPerDecade:log10(freqHighLimit)); 
 
   % Perfectly circular loop:   
