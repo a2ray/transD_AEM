@@ -10,7 +10,7 @@
 % Model setup:
 %
 z   = [-1d5     0   100  ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
-sig = [1d-20   1/10 1/10 ];   % (S/m), layer conductvities. First is air (1d-12).
+sig = [1d-12   1/10 1/10 ];   % (S/m), layer conductvities. First is air (1d-12).
 
 %
 % SkyTEM system setup:
@@ -173,7 +173,7 @@ dLM = dLM/area;
 % Some numerial parameters used by the forward code (don't change these):
 %
 nFreqsPerDecade = 15;
-LoopQuadOrder   = 3;   % Gauss quadrature order for polygon loop integration
+LoopQuadOrder   = 5;   % Gauss quadrature order for polygon loop integration
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
 
@@ -188,6 +188,8 @@ mu = ones(size(sig)); % relative magnetic permeability of each layer. Set this t
 tic
 BzLM = get_LoopFields_TD_FHT(tLM,xyPolyTx,zTx,xyRx,zRxLM,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampLM,lowPassFiltersLM);    
 toc                     
+% BzLM_NoLowPass = get_LoopFields_TD_FHT(tLM,xyPolyTx,zTx,xyRx,zRxLM,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampLM);  
+% BzLM_NoRamp    = get_LoopFields_TD_FHT(tLM,xyPolyTx,zTx,xyRx,zRxLM,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,[],lowPassFiltersLM);  
 
 tic
 BzHM = get_LoopFields_TD_FHT(tHM,xyPolyTx,zTx,xyRx,zRxHM,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampHM,lowPassFiltersHM);    
@@ -203,6 +205,9 @@ loglog(tLM,abs(BzLM),'b-','linewidth',1);
 hold on;
 loglog(tLM,abs(dLM),'c--','linewidth',lw); 
 
+% loglog(tLM,abs(BzLM_NoLowPass),'m-','linewidth',1); 
+% loglog(tLM,abs(BzLM_NoRamp),'g-','linewidth',1); 
+
 loglog(tHM,abs(BzHM),'r-','linewidth',1); 
 hold on;
 loglog(tHM,abs(dHM),'k--','linewidth',lw);
@@ -213,7 +218,7 @@ ylabel('dBz/dt (V/Am^4)')
 xlabel('Time (s)')
 set(gca,'fontsize',14)
 legend('LM Scripps', 'LM SkyTEM','HM Scripps', 'HM SkyTEM')
- 
+%legend('LM Scripps', 'LM SkyTEM','LM Scripps No LowPass','LM Scripps No Ramp','HM Scripps', 'HM SkyTEM') 
 
 subplot(2,1,2)
 loglog(tLM,100*abs(BzLM+dLM)./abs(dLM),'b-','linewidth',lw)
@@ -236,10 +241,10 @@ clear all
 
 
 nFreqsPerDecade = 15;
-LoopQuadOrder   = 1;   % Gauss quadrature order for polygon loop integration
+LoopQuadOrder   = 3;   % Gauss quadrature order for polygon loop integration
 loopRadius      = 15; % 10 m circular loop for Christiansen formula
 
-nPolygonSides   = 30;  % number of polygon sides. more means better circle approximation. must be >2
+nPolygonSides   = 20;  % number of polygon sides. more means better circle approximation. must be >2
 
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
@@ -287,8 +292,60 @@ loglog(tlong,-(BzPoly),'r--','linewidth',1);
 legend('Analytic','Polygon')
 xlabel('Time (s)')
 title(sprintf('LoopQuadOrder=%i, nPolygonSides=%i, nFreqsPerDecade=%i',LoopQuadOrder,nPolygonSides,nFreqsPerDecade))
-
+set(gca,'fontsize',14)
+ 
 subplot(2,1,2)
-loglog(tlong,100*abs(dbzdt'-BzPoly)./abs(dbzdt)','k-','linewidth',1);
+loglog(tlong,100*abs(dbzdt'-BzPoly)./abs(dbzdt)','-','linewidth',1);
+hold all
 ylabel('Relative Difference (%)')
 xlabel('Time (s)')
+set(gca,'fontsize',14)
+
+
+%% Test FD Polygon integration without time domain:
+clear all;
+
+
+xyPolyTx = [ -15.09 -2.00 ; 
+             -8.11 -10.16 ;
+              8.11 -10.16 ; 
+             15.09  -2.00 ;
+             15.09   2.00 ;
+              8.11  10.16 ; 
+             -8.11  10.16 ; 
+             -15.09  2.00 ];
+           
+zTx     = -30; 
+zRx     = -31.90;
+xyRx    = [17 0]; 
+
+nFreqsPerDecade = 3;
+ 
+HankelFilterName = 'kk201Hankel.txt';
+ 
+
+z   = [-1d5     0     ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
+sig = [1d-20   1/10   ]; 
+mu  = ones(size(sig)); % relative magnetic permeability of each layer. Set this to 1 always!
+
+
+freqs = 10.^(-3:1/nFreqsPerDecade:6); 
+ 
+tic
+nOrderMax = 8;
+for order = 1:nOrderMax
+    BzPoly(order,:) = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName, order);
+   % BzPoly(order,:) = get_PolygonFields_VMD_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName, order);
+end
+toc
+ 
+figure;
+for order = 1:nOrderMax-1
+    loglog(freqs,100*abs(BzPoly(order,:)-BzPoly(nOrderMax,:))./abs(BzPoly(nOrderMax,:)),'-','linewidth',1);
+    hold all
+end
+legend(gca,num2str([1:nOrderMax-1]'))
+title(sprintf(' Rx range=%.0f',xyRx(1)))
+ylabel('Relative Difference (%)')
+xlabel('Frequency (Hz)')
+set(gca,'fontsize',14)

@@ -68,11 +68,11 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 %
     nTimesPerDecade     = 10;   % number of time samples per log 10 decade for the 
                                 % TDEM spline interpolation when doing the waveform 
-                                % ramp integration. 5 is usually sufficient.
+                                % ramp integration. 5-10 is usually sufficient.
     freqLowLimit        = 1d-3; % lower and upper limits for the sampling the FDEM response in log10(frequency)
     freqHighLimit       = 1d6;
     nQuadOrderTimeInteg = 5;    % Order of Guass quadrature used for time integration. 
-                                 % This is the number of quadrature points per waveform time segment.
+                                % This is the number of quadrature points per waveform time segment.
 % 
 % Parse inputs:
 %
@@ -104,9 +104,12 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
   % Perfectly circular loop:   
   % BzFD = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
 
-  % Kernel for polygon loop:  
-    BzFD = get_PolygonFields_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
- 
+  % Kernel for polygon loop calculated by integrating Bz from a VMD over the loop area: 
+  %  BzFD = get_PolygonFields_VMD_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
+  
+  % Kernel for doing line integral along wire segments of Bz from a HED: 
+    BzFD = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
+    
 %
 % Step 1b: Apply front end filters, if input:
 %

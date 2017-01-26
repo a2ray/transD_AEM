@@ -58,7 +58,6 @@ function Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
 % 
 
     FJ0 = repmat(Filter.J0,1,length(freqs));
-    FJ1 = repmat(Filter.J1,1,length(freqs));
 
     %
     % Loop over receivers
@@ -211,7 +210,7 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     BzKernel   = squeeze(Fz.*LAM(1,:,:).^3);
     
     if size(BzKernel,1) == 1
-        BzKernel = BzKernel';
+        BzKernel = BzKernel.';
     end
  
     

@@ -7,13 +7,14 @@ freqLowLimit        = 1d-3;
 freqHighLimit       = 1d6;
 freqs = 10.^(log10(freqLowLimit):1/nFreqsPerDecade:log10(freqHighLimit));
 
+
 z   = [-1d5    0   100  ];   
 sig = [1d-12   1/10 1/10 ];
 mu = ones(size(sig));
 
 zTx     = -30; 
 zRx     = -31.90;
-xyRx    = [-17 0]; 
+xyRx    = [17 0]; 
 
 xyPolyTx = [ -15.09 -2.00 ; 
              -8.11 -10.16 ;
@@ -35,7 +36,7 @@ GQorder        = 2;
 
 % Polyon transmitter:
 tic
-BzFDPoly = get_PolygonFields_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,GQorder);
+BzFDPoly = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,GQorder);
 t = toc;
 fprintf('%32s %.3f s\n','get_PolygonFields_FD_FHT time:',t);
 

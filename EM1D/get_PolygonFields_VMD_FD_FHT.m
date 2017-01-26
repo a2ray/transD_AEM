@@ -1,4 +1,4 @@
-function Bz = get_PolygonFields_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,filterName,GQorder)
+function Bz = get_PolygonFields_VMD_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,filterName,GQorder)
 
 %This function calculates the frequency domain magnetic field of a polygon
 %shaped loop of wire. It does so by approximating the loop as a set of
@@ -11,7 +11,25 @@ function Bz = get_PolygonFields_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,filt
 %uses Gauss quadrature using get_VMD_FD_FHT at those points with those
 %weights.
 
- 
+bPlot = false; % set to true to plot polygon, triangles and quadrature points
+ % KWK DEBUG: try polygauss:
+
+%     degree = GQorder;
+%     polygon_sides = [xyPolyTx;xyPolyTx(1,:)];
+% 
+%     xywq  = polygauss(polygon_sides,degree,'quadrangulation');
+%     range = sqrt((xywq(:,1)-xyRx(1)).^2 + (xywq(:,2)-xyRx(2)).^2);
+%     
+%     BzR = get_VMD_FD_FHT(freqs,zTx,range,zRx,sig,mu,z,filterName);
+%     
+%     area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
+% 
+%     Bz = sum(BzR.*xywq(:,3))/area;
+% 
+%  
+% 
+%     return
+%%
 %compute center of polygon defined by vertices
 centerPoly = mean(xyPolyTx);
 
@@ -28,8 +46,17 @@ nf = length(freqs);
 I = zeros(1,nf);
 
 %kwk debug: plot triangles:
-figure;
+if bPlot
+    figure;
+end
 
+    %get Gauss points and weights on the standard triangle first
+    xw = TriGaussPoints(GQorder);
+    
+    x_ = zeros(size(xw,1),1);
+    y_ = x_;
+    
+    %figure;
 %loop over the number of triangles = the number of polygon vertices
 for k=1:nvertices
     %find the 3 vertices of the current triangle (2 polygon + center)
@@ -40,8 +67,7 @@ for k=1:nvertices
     end
     
     %compute the Gauss quadrature points and weights for this triangle
-    %get Gauss points and weights on the standard triangle first
-    xw = TriGaussPoints(GQorder);
+
     %convert to our coordinates
     for l=1:size(xw(:,1))
         x_(l) = v(1,1)*(1-xw(l,1)-xw(l,2))+v(2,1)*xw(l,1)+v(3,1)*xw(l,2);
@@ -49,18 +75,22 @@ for k=1:nvertices
     end
 
     %kwk debug: plot triangles and quad points:    
-     plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
-      plot(x_,y_,'*')
-   
+    if bPlot
+        plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
+        plot(x_,y_,'*')
+    end
     %compute distances (horizontal range only from each integration point to receiver
     distRx_ = sqrt( (x_ - xyRx(1)).^2 + ...
-                   (y_ - xyRx(2)).^2 ); 
+                    (y_ - xyRx(2)).^2 ); 
     
     %perform numerical integration (evaluate vertical magnetic dipole at
     %each integration point and multiply by its integration weight)
     tmp = 0.0*I;
+    
     for l=1:length(distRx_)
-        tmp = tmp + get_VMD_FD_FHT(freqs,zTx,distRx_(l),zRx,sig,mu,z,filterName)*xw(l,3);
+        BzR = get_VMD_FD_FHT(freqs,zTx,distRx_(l),zRx,sig,mu,z,filterName);
+        tmp = tmp + BzR*xw(l,3);
+       % semilogy(distRx_(l),abs(BzR(1)),'o'); hold on;
     end
     tmp = tmp*polyarea(v(:,1),v(:,2));
     I = I + tmp;
