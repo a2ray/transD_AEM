@@ -86,12 +86,13 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
         rampTime = [];
     end
     
-   % Adust frequency range to cover min/max times:
-    if freqHighLimit <= 2/min(times)
-        freqHighLimit = 10/min(times);
+   % Adust frequency range to cover min/max times plus a little bit more:
+    n = 3;
+    if freqHighLimit < n/min(times)
+       freqHighLimit = n/min(times);
     end
-    if freqLowLimit >= 1/max(times)/2
-       freqLowLimit =  1/max(times)/10;
+    if freqLowLimit > n/max(times)
+       freqLowLimit = n/max(times);
     end
     
 %
@@ -179,8 +180,10 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
                 w      = log10(Filter.base/t);
 
                 BzFpp  = ppval(PP,w); % get Bz at angular log10 freqs in w
-
-                %kwk debug:BzFpp = get_LoopFields_FD_FHT(Filter.base/t/(2*pi),rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName).';
+                
+                %kwk debug:
+                %BzFpp = get_PolygonFields_HED_FD_FHT(Filter.base/t/(2*pi),xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder).';
+                %BzFpp = get_LoopFields_FD_FHT(Filter.base/t/(2*pi),rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName).';
                
                 BzFpp  = -imag(BzFpp)*2/pi; % scale for impulse response
 
@@ -208,7 +211,7 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
                 w      = log10(Filter.base/t);
 
                 BzFpp  = ppval(PP,w); % get Bz at angular log10 freqs in w
-
+            
                 BzFpp  = -imag(BzFpp)*2/pi; % scale for impulse response
 
                 %

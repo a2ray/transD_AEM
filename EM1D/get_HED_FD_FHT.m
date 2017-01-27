@@ -70,7 +70,7 @@ function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
         % FHT:
         lambda      = Filter.base/rRx(iRx);
         BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx(iRx));             
-        Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx);;  
+        Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx);; 
         
     end % loop over receivers
            
