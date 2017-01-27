@@ -173,7 +173,7 @@ dLM = dLM/area;
 % Some numerial parameters used by the forward code (don't change these):
 %
 nFreqsPerDecade = 15;
-LoopQuadOrder   = 5;   % Gauss quadrature order for polygon loop integration
+LoopQuadOrder   = 3;   % Gauss quadrature order for polygon loop integration
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
 
@@ -244,19 +244,19 @@ nFreqsPerDecade = 15;
 LoopQuadOrder   = 3;   % Gauss quadrature order for polygon loop integration
 loopRadius      = 15; % 10 m circular loop for Christiansen formula
 
-nPolygonSides   = 20;  % number of polygon sides. more means better circle approximation. must be >2
+nPolygonSides   = 25;  % number of polygon sides. more means better circle approximation. must be >2
 
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
 
 z   = [-1d5     0     ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
-sig = [1d-20   1/10   ]; 
+sig = [1d-20   1/1   ]; 
 
 
 %-------------------------------
 % Don't change anything below here:
 
-tlong       = logspace(-6,-1,40);
+tlong       = logspace(-6,1,40);
 xyRx        = [0 0];  % has to be 0 since Christiansen formula is only for receiver coil in center of transmitter loop
 zRx         = 0; % Rx depth. has to be 0 since Christiansen formula (from Ward and Hohmann actually) is valid only on surface of halspace
 zTx         = 0; % Tx depth. has to be 0 since Christiansen formula (from Ward and Hohmann actually) is valid only on surface of halspace
@@ -280,8 +280,7 @@ dbzdt = dbzdt/(pi*a^2);
 
 % Compute loop response for the polygon, without any waveform ramp or
 % filters:
-BzPoly = get_LoopFields_TD_FHT(tlong,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
-                             LoopQuadOrder);    
+BzPoly = get_LoopFields_TD_FHT(tlong,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder);    
 
 
 figure;
@@ -302,9 +301,8 @@ xlabel('Time (s)')
 set(gca,'fontsize',14)
 
 
-%% Test FD Polygon integration without time domain:
+%% Test frequency domain  polygon integration only:
 clear all;
-
 
 xyPolyTx = [ -15.09 -2.00 ; 
              -8.11 -10.16 ;
@@ -319,7 +317,7 @@ zTx     = -30;
 zRx     = -31.90;
 xyRx    = [17 0]; 
 
-nFreqsPerDecade = 3;
+nFreqsPerDecade = 10;
  
 HankelFilterName = 'kk201Hankel.txt';
  
@@ -340,12 +338,75 @@ end
 toc
  
 figure;
+subplot(2,1,1)
+loglog(freqs,abs(BzPoly(nOrderMax,:)),'-','linewidth',1);
+title(sprintf(' Rx range=%.0f',xyRx(1)))
+ylabel('Bz')
+xlabel('Frequency (Hz)')
+set(gca,'fontsize',14)
+
+subplot(2,1,2)
+
 for order = 1:nOrderMax-1
     loglog(freqs,100*abs(BzPoly(order,:)-BzPoly(nOrderMax,:))./abs(BzPoly(nOrderMax,:)),'-','linewidth',1);
     hold all
 end
 legend(gca,num2str([1:nOrderMax-1]'))
-title(sprintf(' Rx range=%.0f',xyRx(1)))
+
 ylabel('Relative Difference (%)')
 xlabel('Frequency (Hz)')
+set(gca,'fontsize',14)
+
+
+%% Test convergence of Polygon integration in the time domain:
+clear all;
+
+xyPolyTx = [ -15.09 -2.00 ; 
+             -8.11 -10.16 ;
+              8.11 -10.16 ; 
+             15.09  -2.00 ;
+             15.09   2.00 ;
+              8.11  10.16 ; 
+             -8.11  10.16 ; 
+             -15.09  2.00 ];
+           
+zTx     = -30; 
+zRx     = -31.90;
+xyRx    = [17 0]; 
+ 
+nFreqsPerDecade = 10;
+
+HankelFilterName = 'kk201Hankel.txt';
+CosSinFilterName = 'kk201CosSin.txt';
+lowPassFilters = [ 4.500E+05  3.000E+05 ]; 
+
+z   = [-1d5     0     ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
+sig = [1d-20   1/10   ]; 
+mu  = ones(size(sig)); % relative magnetic permeability of each layer. Set this to 1 always!
+
+tlong = logspace(-5,-1, 40); 
+ 
+nOrderMax = 8;
+for order = 1:nOrderMax
+   BzPoly(order,:) = get_LoopFields_TD_FHT(tlong,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade, order, [], []);        
+end
+ 
+ 
+figure;
+subplot(2,1,1)
+loglog(tlong,abs(BzPoly(nOrderMax,:)),'-','linewidth',1);
+title(sprintf('nFreqsPerDecade=%i, Rx range=%.0f',nFreqsPerDecade,xyRx(1)))
+ylabel('dBz/dt (V/Am^4)')
+xlabel('Time (s)')
+set(gca,'fontsize',14)
+
+subplot(2,1,2)
+for order = 1:nOrderMax-1
+    loglog(tlong,100*abs(BzPoly(order,:)-BzPoly(nOrderMax,:))./abs(BzPoly(nOrderMax,:)),'-','linewidth',1);
+    hold all
+end
+title('Accuracy for various quadrature orders')
+legend(gca,num2str([1:nOrderMax-1]'))
+ylabel('Relative Difference (%)')
+xlabel('Time (s)')
 set(gca,'fontsize',14)
