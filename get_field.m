@@ -19,11 +19,11 @@ else % SkyTEM High and Low Mode data:
     
     
     
-        BzHigh = get_LoopFields_TD_FHT(S.HighMode.times,S.HighMode.rTx,S.HighMode.zTx,S.HighMode.rRx,S.HighMode.zRx,ModelSig,mu,ModelZ,...
-                 S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.HighMode.ramp);    
+        BzHigh = get_LoopFields_TD_FHT(S.HighMode.times,S.xyPolyTx,S.zTx,S.xyRx,S.HighMode.zRx,ModelSig,mu,ModelZ,...
+                 S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.LoopQuadOrder,S.HighMode.ramp,S.lowPassFilters);    
 
-        BzLow = get_LoopFields_TD_FHT(S.LowMode.times,S.LowMode.rTx,S.LowMode.zTx,S.LowMode.rRx,S.LowMode.zRx,ModelSig,mu,ModelZ,...
-                S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.LowMode.ramp);   
+        BzLow = get_LoopFields_TD_FHT(S.LowMode.times,S.xyPolyTx,S.zTx,S.xyRx,S.LowMode.zRx,ModelSig,mu,ModelZ,...
+                 S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.LoopQuadOrder,S.LowMode.ramp,S.lowPassFilters);   
                      
      Bz = [BzHigh; BzLow];
    
