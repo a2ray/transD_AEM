@@ -49,12 +49,12 @@ xyPolyTx = [ -15.09 -2.00 ;
              -15.09  2.00 ];
                  
 %Parameters needed for the Bayesian inversion
-numIterations = 5e5;
+numIterations = 5e3;
 saveEvery = 1e4;   
 log10rho_min = 0.5;  %min resistivity allowed
 log10rho_max = 5;    %max resistivity allowed
 zMin = 0.0;          %min interface depth allowed
-zmax = 400;          %max interface depth allowed
+zMax = 400;          %max interface depth allowed
 kMax = 20;           %max number of layers allowed
 kMin = 1;            %min number of layers allowed
 nFreqsPerDecade = 15;   %density of Fourier domain sampling
@@ -100,5 +100,16 @@ HighMode.ramp = [
  5.090E-05   0.01 
  5.500E-05   0.00 
 ];
+
+%name of folder to save output from Bayesian inversion
+outputFolder = 'SkyTEMinversions/InitialRun';
+%name of file to save the structure that contains all of these parameters,
+%data, etc
+DataFile = 'SkyTEMinvSetup.mat'; 
+%save this setup to the .mat file
+save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
+              'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
+              'kMin','kMax','zMin','zMax','log10rho_min','log10rho_max',...
+              'numIterations','saveEvery','lowPassFilters');
 
 
