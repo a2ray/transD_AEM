@@ -49,12 +49,12 @@ xyPolyTx = [ -15.09 -2.00 ;
              -15.09  2.00 ];
                  
 %Parameters needed for the Bayesian inversion
-numIterations = 5e5;
-saveEvery = 1e4;   
+numIterations = 5e3;
+saveEvery = 1e2;   
 log10rho_min = 0.5;  %min resistivity allowed
 log10rho_max = 5;    %max resistivity allowed
 zMin = 0.0;          %min interface depth allowed
-zmax = 400;          %max interface depth allowed
+zMax = 400;          %max interface depth allowed
 kMax = 20;           %max number of layers allowed
 kMin = 1;            %min number of layers allowed
 nFreqsPerDecade = 15;   %density of Fourier domain sampling
@@ -100,5 +100,26 @@ HighMode.ramp = [
  5.090E-05   0.01 
  5.500E-05   0.00 
 ];
+
+%number of layers in the model that are not inverted for (only air here)
+nFixedLayers = 1; 
+%none of this synthetic model matters but the first two: top of air and the ground (z = 0)
+z   = [-1d5  0      50    100  150  ];   
+%only the first conductivity (that of air) matters here
+sig = [1d-12  1/1000 1/100 1/10 1/1000 ];   
+% Fixed model layers:
+rho = 1/sig(1:nFixedLayers);   
+z   = z(1:nFixedLayers+1);    % Layer boundaries for fixed layers
+
+%name of folder to save output from Bayesian inversion
+outputFolder = 'SkyTEMinversions/InitialRun';
+%name of file to save the structure that contains all of these parameters,
+%data, etc
+DataFile = 'SkyTEMinvSetup.mat'; 
+%save this setup to the .mat file
+save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
+              'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
+              'kMin','kMax','zMin','zMax','log10rho_min','log10rho_max',...
+              'numIterations','saveEvery','lowPassFilters','z','rho');
 
 
