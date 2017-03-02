@@ -33,14 +33,15 @@ else % SkyTEM High and Low Mode data:
    
 end
 
-    m = (abs(data(:)) - abs(Bz(:)))./(error_bar(:));
-    misfit = [m'*m, sqrt(m'*m/length(error_bar))];
+%     m = (abs(data(:)) - abs(Bz(:)))./(error_bar(:));
+%     misfit = [m'*m, sqrt(m'*m/length(error_bar))];
     residHM = (abs(S.HighMode.data)-abs(Bz(1:19)'))./S.HighMode.sd;
     residLM = (abs(S.LowMode.data)-abs(Bz(20:end)'))./S.LowMode.sd;
     rms_residHM = sqrt(residHM*residHM'/length(residHM));
     rms_residLM = sqrt(residLM*residLM'/length(residLM));
     rms_total = sqrt((residHM*residHM' + residLM*residLM')/length(residHM) + length(residLM));
-    fprintf('rmsHM, rmsLM, rmsTot: %f, %f, %f\n',rms_residHM,rms_residLM,rms_total)
+    misfit = [ (rms_residHM*rms_residHM' + rms_residLM*rms_residLM')/2 , rms_total ];
+    %fprintf('rmsHM, rmsLM, rmsTot: %f, %f, %f\n',rms_residHM,rms_residLM,rms_total)
     %keyboard
     
 end
