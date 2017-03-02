@@ -4,10 +4,14 @@
 function Bz = get_field(S,x)
     
 % Isotropic only, ignoring rhov feld
-ModelSig = 1./[S.rho(1,:),10.^x.rhoh ]; %hahaha blah blah blah
+ModelSig = 1./[S.rho(1,:),10.^x.rhoh ]; 
 %ModelSig = 1./( 10.^x.rhoh );
 ModelZ = [S.z,x.z];
 %ModelZ = x.z;
+
+% %for testing purposes only
+% ModelZ = [ -1e5 0 100 ];
+% ModelSig = [ 1e-12 1/20 1/2000 ];
 
 mu  = ones(size(ModelSig));
 

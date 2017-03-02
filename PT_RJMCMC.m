@@ -13,32 +13,36 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
     N = S_0.numIterations;
  
     %Acceptance ratios in MCMC chains calculated every so many steps
-    ARwindow = 500;
+    ARwindow = 50;
     
     %save every so many steps
 %     saveWindow = 10000; %keep it to 1e4
     saveWindow = S_0.saveEvery;
     
-    nDisplayEvery = 100;  % print message to screen
+    nDisplayEvery = 5;  % print message to screen
     
     %number of parallel chains (and temperatures)
-    nTemps = 12;
+    nTemps = 1;
     
     %inverse temperature B ladder
     B = logspace(-log10(2.5),0,nTemps);
     
     %probability of swapping every count of the MCMC chain
-    pSwap = 1;
+    %pSwap = 1;
+    pSwap = 0;
     
     %step sizes in model space in log10 resistivity, decreasing temperature
     %for update
-    UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
+    %UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
+    UstepSize = [ 0.006 ];
     %for birth / death
-    BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
+    %BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
+    BstepSize = [ 0.4 ];
     
     %step sizes in model space depth in m, decreasing temperature
     %for move interface
-    MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
+    %MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
+    MstepSize = [ 7 ];
     
  
     % Other parameters for the RJMCMC algorithm:
