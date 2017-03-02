@@ -34,10 +34,10 @@ end
 % LowMode.sd = Q.dataLM.*Q.dataErrLM;
 %Height of transmitter and receivers (low and high modes) and
 %xy-coordinates of the receiver (same datum for z as the model)
-zTx     = -30; 
+zTx     = -Q.alt; 
 xyRx    = [17 0]; 
-LowMode.zRx = -31.90;
-HighMode.zRx = -30.19;         
+LowMode.zRx = -(zTx + 1.90);
+HighMode.zRx = -(zTx + 0.19);         
 % coordinates of the vertices of the transmitter loop polygon
 xyPolyTx = [ -15.09 -2.00 ; 
              -8.11 -10.16 ;
@@ -47,6 +47,13 @@ xyPolyTx = [ -15.09 -2.00 ;
               8.11  10.16 ; 
              -8.11  10.16 ; 
              -15.09  2.00 ];
+
+%normalize the data by the area of the loop
+area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
+HighMode.data = HighMode.data/area;
+HighMode.sd = HighMode.sd/area;
+LowMode.data = LowMode.data/area;
+LowMode.sd = LowMode.sd/area;
                  
 %Parameters needed for the Bayesian inversion
 numIterations = 5e3;
