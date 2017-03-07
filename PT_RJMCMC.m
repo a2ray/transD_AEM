@@ -148,6 +148,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            aveIterRate     = tLength/count;
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
+           fprintf('RMS misfit: %f\n',oldMisfit{ii}(2))
            
         end
         %see if swap
@@ -495,7 +496,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
             ConvStat.uc=ConvStat.uc+1;
             [xNew,priorViolate]=rhoUpdate(k,x,S,'large');%always large in PT
                 if ~priorViolate
+                    %tic
                     newMisfit = getMisfit(xNew,S);
+                    %toc
                     ConvStat.evalCount = ConvStat.evalCount +1;
                     logalpha = -(newMisfit(1) - oldMisfit(1))*B;
                 else
@@ -529,7 +532,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     end    
                     %calculate acceptance probability
                     if (~priorViolate)
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount+1;
                         %just priorR times propR
                         logalpha  = 2*log(S.rSD2)+log(2*pi)-2*log(del)+(pertNorm/2);
@@ -557,7 +562,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     if (~priorViolate)
                         [pertNorm,xNew] = death (x,k,S);
                         %compute acceptance
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount +1;
                         %just priorR times propR
                         logalpha = -2*log(S.rSD2)-log(2*pi)+2*log(del)-(pertNorm/2);
@@ -581,7 +588,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     ConvStat.mc=ConvStat.mc+1;
                     [xNew,priorViolate] = move (x,k,S);
                     if ~priorViolate
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount +1;
                         logalpha = -(newMisfit(1) - oldMisfit(1))*B;
                     else

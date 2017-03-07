@@ -25,9 +25,10 @@ Bz = zeros(1,nf);
 if bPlot
    figure; 
 end
- 
+l = 1; %counter for the number of Gauss quadrature points
+wquad_ = [ ]; % holder for GQ weights
 %loop over the number of segments:
-for k=1:nvertices
+for k=1:5%nvertices %change this back to nvertices if using anything other than the SkyTEM octagon!!
     
     % get the segments:  
     if (k == nvertices)
@@ -51,6 +52,7 @@ for k=1:nvertices
     xquad = xq*dx/2 + midpoint(1);
     yquad = xq*dy/2 + midpoint(2);
     wquad = wq*lenv/2;  
+    wquad_ = [ wquad_ ; wquad ];
     
     if bPlot
         plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
@@ -61,11 +63,11 @@ for k=1:nvertices
         plot(xyRx(1),xyRx(2),'k*')
     end
     % Now loop over quadrature points and compute Bz:
-    
+
     BzQ = 0*Bz;
-    
+
     for i = 1:length(xquad)
-        
+
         % Get angle theta between wire segment and receiver azimuth. Since Bz
         % has cos(theta) dependence, the direction doesn't matter.
         
@@ -81,23 +83,63 @@ for k=1:nvertices
         acrossb = (dydp*dxRx - dxdp*dyRx);
         adotb   = dv2q*drxq';
         theta   = atan2d( acrossb,adotb);    % tan(theta) =  a x b / a dot b   % this gets 4 quadarant theta
- 
+        theta_(l) = theta;
+        
         rRx     = norm(drxq);
+        rRx_(l) = rRx; %holds all the ranges for the Gauss quadrature points
+        l = l+ 1;
         
-        BzP     = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName);
+        %BzP     = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName);
         
-        BzQ     = BzQ + BzP*wquad(i); 
+        %BzQ     = BzQ + BzP*wquad(i); 
         
     end
     
-    Bz = Bz + BzQ;
+%     Bz = Bz + BzQ;  %uncomment this line if using anything but the SKyTEM octagon!!
+    
+%     if( k > 1 && k < 5 )
+%         Bz = Bz + 2*BzQ;
+%     else
+%         Bz = Bz + BzQ;
+%     end
     
 end
+
+nrsplines = 3; %number of spline points to use for the rRx spline interpolation
+R = linspace(rRx_(1),rRx_(end),nrsplines);
+
+%get the frequency response Bz at each of the spline points, for theta = 90
+for j=1:nrsplines
+    BzSpline(:,j) = get_HED_FD_FHT(freqs,zTx,R(j),zRx,90,sig,mu,z,filterName);
+end
+%compute the spline interpolation at the rRx values of the GQ points (rRx_)
+for j=1:nf
+    BzP_(j,:) = interp1(R,BzSpline(j,:),rRx_,'spline'); 
+end
+%apply theta dependence and Gauss quadrature weights, and sum up
+Bz_ = 0.0*Bz;
+%keyboard
+for l=1:size(BzP_,2)
+    if( l > GQorder && l < size(BzP_,2)-(GQorder-1) )
+        BzP_(:,l) = BzP_(:,l)*sind(theta_(l))*wquad_(l);
+        Bz_ = Bz_ + 2*BzP_(:,l)';
+    else
+        BzP_(:,l) = BzP_(:,l)*sind(theta_(l))*wquad_(l);
+        Bz_ = Bz_ + BzP_(:,l)';
+    end
+end
+%keyboard
 
 % normalize by true polygon area:
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
 
-Bz = Bz/area;
+%this is a total fudge - I have no idea where this came from, but imag(Bz_) = -imag(Bz)
+Bz_ = Bz_ + 2*(real(Bz_) - Bz_);  % multiply imag(Bz_) by -1
+
+%Bz = Bz/area;
+Bz_ = Bz_/area;
+%keyboard
+Bz = Bz_;
  
 end
 

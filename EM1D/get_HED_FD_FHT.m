@@ -70,7 +70,7 @@ function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
         % FHT:
         lambda      = Filter.base/rRx(iRx);
         BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx(iRx));             
-        Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx);; 
+        Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx); 
         
     end % loop over receivers
            
@@ -116,12 +116,12 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     a     = complex(zeros(length(z),length(lambda),length(freqs)));
     b     = complex(zeros(length(z),length(lambda),length(freqs)));
  
-    
+
     [LAM,SIG,FREQ] = meshgrid(lambda,sig,freqs);
     [~,MU,~]  = meshgrid(lambda,mu,freqs);
     [~,HH,~]  = meshgrid(lambda,hh,freqs);     
     
- 
+
     gamma = sqrt(LAM.^2 - 1i*2*pi*FREQ*mu0.*MU.*(SIG - 1i*2*pi*FREQ*epsilon));
     
     %
@@ -217,5 +217,4 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
         BzKernel = BzKernel.';
     end
  
-    
 end % 

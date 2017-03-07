@@ -39,14 +39,14 @@ xyRx    = [17 0];
 LowMode.zRx = -(zTx + 1.90);
 HighMode.zRx = -(zTx + 0.19);         
 % coordinates of the vertices of the transmitter loop polygon
-xyPolyTx = [ -15.09 -2.00 ; 
+xyPolyTx = [ -15.09  2.00 ;
+             -15.09 -2.00 ; 
              -8.11 -10.16 ;
               8.11 -10.16 ; 
              15.09  -2.00 ;
              15.09   2.00 ;
               8.11  10.16 ; 
-             -8.11  10.16 ; 
-             -15.09  2.00 ];
+             -8.11  10.16 ];
 
 %normalize the data by the area of the loop
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
@@ -56,18 +56,18 @@ LowMode.data = LowMode.data/area;
 LowMode.sd = LowMode.sd/area;
                  
 %Parameters needed for the Bayesian inversion
-numIterations = 5e3;
-saveEvery = 1e2;   
+numIterations = 50;
+saveEvery = 1e3;   
 log10rho_min = 0.5;  %min resistivity allowed
 log10rho_max = 5;    %max resistivity allowed
 zMin = 0.0;          %min interface depth allowed
 zMax = 400;          %max interface depth allowed
 kMax = 20;           %max number of layers allowed
 kMin = 1;            %min number of layers allowed
-nFreqsPerDecade = 15;   %density of Fourier domain sampling
-HankelFilterName = 'kk201Hankel.txt';   %Hankel filters
-CosSinFilterName = 'kk201CosSin.txt';   %Cosine-Sine filters
-LoopQuadOrder = 3;      %Gauss quadrature order for loop integeration
+nFreqsPerDecade = 10;   %density of Fourier domain sampling
+HankelFilterName = 'kk101Hankel.txt';   %Hankel filters
+CosSinFilterName = 'kk101CosSin.txt';   %Cosine-Sine filters
+LoopQuadOrder = 2;      %Gauss quadrature order for loop integeration
 lowPassFilters = [ 4.500E+05  3.000E+05 ];  %Butterworth low-pass filters
 
 %low-mode transmitter ramp: [ time    fraction-of-full-power ]
