@@ -11,6 +11,9 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
 %     %number of iterations
 %     N = 500000;  %keep it to 500e3
     N = S_0.numIterations;
+    
+    %decide if you want to use low-mode data (1), high-mode data (2), or both (3)
+    S_0.DataType = 2; 
  
     %Acceptance ratios in MCMC chains calculated every so many steps
     ARwindow = 50;
@@ -19,9 +22,10 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
 %     saveWindow = 10000; %keep it to 1e4
     saveWindow = S_0.saveEvery;
     
-    nDisplayEvery = 5;  % print message to screen
+    nDisplayEvery = 250;  % print message to screen
     
     %number of parallel chains (and temperatures)
+    %nTemps = 12;
     nTemps = 1;
     
     %inverse temperature B ladder
@@ -115,6 +119,9 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         ConvStat{ii}.evalCount = 0;
 %         x{ii} = true_model;
 %         k{ii} = length(x{ii}.z);
+        for jjj=1:5
+            rand;
+        end
         if nargin~=3
             k{ii} = 1;
             x{ii}.z = S_0.zMin + (S_0.zMax-S_0.zMin)*rand;
@@ -149,6 +156,30 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
            fprintf('RMS misfit: %f\n',oldMisfit{ii}(2))
+           
+%             tmpMisfit = getMisfit(x{end},S{end});
+%             Bz = tmpMisfit(3:end);
+%             BzHM = Bz;
+%             BzLM = Bz%(20:end);
+%             eHM = S{end}.HighMode.data+S{end}.HighMode.sd;
+%             eHM = [ eHM ; S{end}.HighMode.data-S{end}.HighMode.sd];
+%             eLM = S{end}.LowMode.data+S{end}.LowMode.sd;
+%             eLM = [ eLM ; S{end}.LowMode.data-S{end}.LowMode.sd];
+%             clf
+%             figure
+%             loglog(S{end}.HighMode.times,S{end}.HighMode.data,'ro')
+%             hold on
+%             loglog(S{end}.LowMode.times,S{end}.LowMode.data,'bo')
+%             loglog([S{end}.HighMode.times;S{end}.HighMode.times],eHM,'-','LineWidth',2)
+%             loglog([S{end}.LowMode.times;S{end}.LowMode.times],eLM,'-','LineWidth',2)
+%             loglog(S{end}.HighMode.times,abs(BzHM),'*')
+%             loglog(S{end}.LowMode.times,abs(BzLM),'*')
+%             %residHM = (abs(S{end}.HighMode.data)-abs(Bz(1:19)))./S{end}.HighMode.sd;
+%             residLM = (abs(S{end}.LowMode.data)-abs(BzLM))./S{end}.LowMode.sd;
+%             %rms_residHM = sqrt(residHM*residHM'/length(residHM))
+%             rms_residLM = sqrt(residLM*residLM'/length(residLM))
+           
+%            keyboard
            
         end
         %see if swap
@@ -201,7 +232,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
             Dist{jj}(count) = Dist{jj}(count) + dTrav;
             samples{jj}{count} = x{jj};
             kTracker{jj}(count)= k{jj};
-            en(count,:,jj)      = oldMisfit{jj};
+            en(count,:,jj)      = oldMisfit{jj}(1:2);
             
             if mod(count,ARwindow) == 0
                  idx = count/ARwindow;

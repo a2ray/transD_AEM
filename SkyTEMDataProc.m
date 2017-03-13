@@ -64,6 +64,8 @@ P.dataErrLM = DataErr(SoundingNum+1,:)';
 P.times = times;
 P.alt = RawOut(SoundingNum,7);
 
+P.XYcoord(:,1) = RawOut(:,2);
+P.XYcoord(:,2) = RawOut(:,3);
 
 
 
