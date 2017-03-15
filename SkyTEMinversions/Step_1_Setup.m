@@ -5,7 +5,8 @@ clear all
 clc
 
 fileName = '../TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz';
-Q = SkyTEMDataProc(fileName,5);
+Q = SkyTEMDataProc(fileName,500);
+load('SynthDataNoise.txt');
 %gate times
 times = Q.times;
 %separate out the high mode and low mode times into separate arrays, get
@@ -26,9 +27,11 @@ for j=1:length(times)
         l = l + 1;
     end
 end
+%keyboard
 % %data (high and low modes)
-% HighMode.data = Q.dataHM;  
-% LowMode.data = Q.dataLM;
+%HighMode.data = SynthDataNoise(1:19)';   
+%LowMode.data = SynthDataNoise(20:end)'; 
+%keyboard
 % %data error (in correct units - not relative error)
 % HighMode.sd = Q.dataHM.*Q.dataErrHM;
 % LowMode.sd = Q.dataLM.*Q.dataErrLM;
@@ -56,13 +59,13 @@ LowMode.data = LowMode.data/area;
 LowMode.sd = LowMode.sd/area;
                  
 %Parameters needed for the Bayesian inversion
-numIterations = 50;
-saveEvery = 1e3;   
-log10rho_min = 0.5;  %min resistivity allowed
+numIterations = 2e5;
+saveEvery = 1e4;   
+log10rho_min = -1;  %min resistivity allowed
 log10rho_max = 5;    %max resistivity allowed
 zMin = 0.0;          %min interface depth allowed
-zMax = 400;          %max interface depth allowed
-kMax = 20;           %max number of layers allowed
+zMax = 250;          %max interface depth allowed
+kMax = 35;           %max number of layers allowed
 kMin = 1;            %min number of layers allowed
 nFreqsPerDecade = 10;   %density of Fourier domain sampling
 HankelFilterName = 'kk101Hankel.txt';   %Hankel filters
@@ -119,7 +122,7 @@ rho = 1/sig(1:nFixedLayers);
 z   = z(1:nFixedLayers+1);    % Layer boundaries for fixed layers
 
 %name of folder to save output from Bayesian inversion
-outputFolder = 'SkyTEMinversions/InitialRun';
+outputFolder = 'SkyTEMinversions/Trash';
 %name of file to save the structure that contains all of these parameters,
 %data, etc
 DataFile = 'SkyTEMinvSetup.mat'; 
@@ -128,5 +131,18 @@ save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
               'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
               'kMin','kMax','zMin','zMax','log10rho_min','log10rho_max',...
               'numIterations','saveEvery','lowPassFilters','z','rho');
+          
+%output the lon-lat of the datapoints I have inverted
+InvertedXY = [ Q.XYcoord(5,:) ; Q.XYcoord(49,:) ; Q.XYcoord(2425,:) ; ...
+    Q.XYcoord(3470,:) ; Q.XYcoord(3000,:) ];
+[Lon, Lat] = UTM2LonLat(InvertedXY(:,1),InvertedXY(:,2),58,'S');
+Qout = [Lon Lat];
+dlmwrite('InvertedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
+
+PropXY = [ Q.XYcoord(500,:) ];
+[Lon, Lat] = UTM2LonLat(PropXY(:,1),PropXY(:,2),58,'S');
+Qout = [Lon Lat];
+dlmwrite('ProposedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
+       
 
 

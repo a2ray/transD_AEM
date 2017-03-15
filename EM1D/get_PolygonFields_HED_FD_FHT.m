@@ -114,18 +114,18 @@ for j=1:nrsplines
 end
 %compute the spline interpolation at the rRx values of the GQ points (rRx_)
 for j=1:nf
-    BzP_(j,:) = interp1(R,BzSpline(j,:),rRx_,'spline'); 
+    BzP(j,:) = interp1(R,BzSpline(j,:),rRx_,'spline'); 
 end
 %apply theta dependence and Gauss quadrature weights, and sum up
-Bz_ = 0.0*Bz;
+Bz = 0.0*Bz;
 %keyboard
-for l=1:size(BzP_,2)
-    if( l > GQorder && l < size(BzP_,2)-(GQorder-1) )
-        BzP_(:,l) = BzP_(:,l)*sind(theta_(l))*wquad_(l);
-        Bz_ = Bz_ + 2*BzP_(:,l)';
+for l=1:size(BzP,2)
+    if( l > GQorder && l < size(BzP,2)-(GQorder-1) )
+        BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
+        Bz = Bz + 2*BzP(:,l)';
     else
-        BzP_(:,l) = BzP_(:,l)*sind(theta_(l))*wquad_(l);
-        Bz_ = Bz_ + BzP_(:,l)';
+        BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
+        Bz = Bz + BzP(:,l)';
     end
 end
 %keyboard
@@ -134,12 +134,11 @@ end
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
 
 %this is a total fudge - I have no idea where this came from, but imag(Bz_) = -imag(Bz)
-Bz_ = Bz_ + 2*(real(Bz_) - Bz_);  % multiply imag(Bz_) by -1
+Bz = Bz + 2*(real(Bz) - Bz);  % multiply imag(Bz_) by -1
 
-%Bz = Bz/area;
-Bz_ = Bz_/area;
+Bz = Bz/area;
+
 %keyboard
-Bz = Bz_;
  
 end
 

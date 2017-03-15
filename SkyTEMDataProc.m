@@ -25,6 +25,9 @@ times = tmp{1};
 %dBz/dt begins in column 18
 RawData = RawOut(:,18:(18+37));
 DataErr = RawOut(:,56:(56+37));
+%Data type (HM or LM) indicator
+DataType = RawOut(:,15);
+FID = RawOut(:,4);
 
 for j=1:size(RawData,1)
     for k=1:size(RawData,2)
@@ -57,10 +60,43 @@ end
 %dlmwrite('GateTimes.txt',times)
 %dlmwrite('SkyTEMdata.txt',RawData)
 
-P.dataHM = RawData(SoundingNum,:)';   %High-mode data for this sounding
-P.dataLM = RawData(SoundingNum+1,:)';  %Low-mode data for this sounding
-P.dataErrHM = DataErr(SoundingNum,:)';
-P.dataErrLM = DataErr(SoundingNum+1,:)';
+if( DataType(SoundingNum) == 1 )
+    P.dataLM = RawData(SoundingNum,:);
+    P.dataErrLM = DataErr(SoundingNum,:)';
+    if( DataType(SoundingNum+1) == 2 && FID(SoundingNum+1) == FID(SoundingNum) )
+        P.dataHM = RawData(SoundingNum+1,:);
+        P.dataErrHM = DataErr(SoundingNum+1,:)';
+    elseif( DataType(SoundingNum-1) == 2 && FID(SoundingNum-1) == FID(SoundingNum) )
+        P.dataHM = RawData(SoundingNum-1,:);
+        P.dataErrHM = DataErr(SoundingNum-1,:)';
+    else
+        P.dataHM = [ ];
+        P.dataErrHM = [ ];
+        fprintf('There is no HM data for this sounding\n')
+    end
+elseif( DataType(SoundingNum) == 2 )
+    P.dataHM = RawData(SoundingNum,:);
+    P.dataErrHM = DataErr(SoundingNum,:)';
+    if( DataType(SoundingNum+1) == 1 && FID(SoundingNum+1) == FID(SoundingNum) )
+        P.dataLM = RawData(SoundingNum+1,:);
+        P.dataErrLM = DataErr(SoundingNum+1,:)';
+    elseif( DataType(SoundingNum-1) == 1 && FID(SoundingNum-1) == FID(SoundingNum) )
+        P.dataLM = RawData(SoundingNum-1,:);
+        P.dataErrLM = DataErr(SoundingNum-1,:)';
+    else
+        P.dataLM = [ ];
+        P.dataErrLM = [ ];
+        fprintf('There is no LM data for this sounding\n')
+    end
+else
+    fprintf('Data error: data is neither HM or LM!\n')
+end
+
+
+% P.dataHM = RawData(SoundingNum,:)';   %High-mode data for this sounding
+% P.dataLM = RawData(SoundingNum+1,:)';  %Low-mode data for this sounding
+% P.dataErrHM = DataErr(SoundingNum,:)';
+% P.dataErrLM = DataErr(SoundingNum+1,:)';
 P.times = times;
 P.alt = RawOut(SoundingNum,7);
 
