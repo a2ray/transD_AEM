@@ -9,10 +9,18 @@ function P = SkyTEMDataProc(fileName,SoundingNum)
 %location of the _dat.xyz file to read data from
 %fileName = 'TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz';
 %this strips away all the header information
-!grep -v "/" TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz > RawOut.txt
+str = ['grep -v "/" ' fileName '_dat.xyz > RawOut.txt'];
+system(str);
+%!grep -v "/" TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz > RawOut.txt
+%!grep -v "/" TaylorGlacierSkyTEMdata/TaylorValley_dat.xyz > RawOut.txt
 %this gets the gate times
-!grep "/ " TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz > tmptimes2.txt
-!grep -v "LINE" tmptimes2.txt > tmptimes.txt
+str = ['grep "/ " ' fileName '_dat.xyz > tmptimes2.txt'];
+system(str);
+%!grep "/ " TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz > tmptimes2.txt
+%!grep "/ " TaylorGlacierSkyTEMdata/TaylorValley_dat.xyz > tmptimes2.txt
+str = ['grep -v "LINE" tmptimes2.txt > tmptimes.txt'];
+system(str);
+%!grep -v "LINE" tmptimes2.txt > tmptimes.txt
 
 %load the data
 load RawOut.txt
@@ -28,6 +36,8 @@ DataErr = RawOut(:,56:(56+37));
 %Data type (HM or LM) indicator
 DataType = RawOut(:,15);
 FID = RawOut(:,4);
+%output FID
+P.FID = FID(SoundingNum);
 
 for j=1:size(RawData,1)
     for k=1:size(RawData,2)
@@ -102,6 +112,8 @@ P.alt = RawOut(SoundingNum,7);
 
 P.XYcoord(:,1) = RawOut(:,2);
 P.XYcoord(:,2) = RawOut(:,3);
+
+
 
 
 
