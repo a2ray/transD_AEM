@@ -12,8 +12,8 @@ if isfield(S,'data')  % Simple format
 
 else % SkyTEM High and Low Mode data:
     
-    data = [S.HighMode.data S.LowMode.data];
-    error_bar = 2*[S.HighMode.sd S.LowMode.sd];
+%     data = [S.HighMode.data S.LowMode.data];
+%     error_bar = 2*[S.HighMode.sd S.LowMode.sd];
     
 %     %temporary plotting code
 %     eHM = S.HighMode.data+S.HighMode.sd;
@@ -63,9 +63,11 @@ end
         nHM = length(S.HighMode.sd);
         residHM = (abs(S.HighMode.data)-abs(Bz(1:nHM)'))./S.HighMode.sd;
         residLM = (abs(S.LowMode.data)-abs(Bz(1+nHM:end)'))./S.LowMode.sd;
+        rmsHM = sqrt(residHM*residHM'/length(residHM));
+        rmsLM = sqrt(residLM*residLM'/length(residLM));
         Chi2By2 = (residHM*residHM' + residLM*residLM')/2;
         rms_total = sqrt((residHM*residHM' + residLM*residLM')/(length(residHM) + length(residLM)));
-        misfit = [ Chi2By2 rms_total Bz' ];
+        misfit = [ Chi2By2 rms_total Bz' rmsHM rmsLM ];
         %fprintf('We are in the high-low mode getMisfit section!\n')
     end
 
