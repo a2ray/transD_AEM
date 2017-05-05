@@ -22,31 +22,36 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
 %     saveWindow = 10000; %keep it to 1e4
     saveWindow = S_0.saveEvery;
     
-    nDisplayEvery = 250;  % print message to screen
+    nDisplayEvery = 100;  % print message to screen
     
     %number of parallel chains (and temperatures)
-    %nTemps = 12;
-    nTemps = 1;
+    nTemps = 4;
+    Tmax = 1.5;
+    %nTemps = 1;
     
     %inverse temperature B ladder
-    B = logspace(-log10(2.5),0,nTemps);
+    %B = logspace(-log10(2.5),0,nTemps);
+    B = logspace(-log10(Tmax),0,nTemps);
     
     %probability of swapping every count of the MCMC chain
-    %pSwap = 1;
-    pSwap = 0;
+    pSwap = 1;
+    %pSwap = 0;
     
     %step sizes in model space in log10 resistivity, decreasing temperature
     %for update
     %UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
-    UstepSize = [ 0.006 ];
+    UstepSize = linspace(0.02, 0.01, nTemps);
+    %UstepSize = [ 0.006 ];
     %for birth / death
     %BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
-    BstepSize = [ 0.4 ];
+    BstepSize = linspace(0.6, 0.4, nTemps);
+    %BstepSize = [ 0.4 ];
     
     %step sizes in model space depth in m, decreasing temperature
     %for move interface
     %MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
-    MstepSize = [ 7 ];
+    MstepSize = linspace(10, 7, nTemps);
+    %MstepSize = [ 7 ];
     
  
     % Other parameters for the RJMCMC algorithm:
@@ -156,6 +161,9 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
            fprintf('RMS misfit: %f\n',oldMisfit{ii}(2))
+           if( S{ii}.DataType == 3 )
+              fprintf('HM RMS, LM RMS: %f %f\n',oldMisfit{ii}(end-1),oldMisfit{ii}(end))
+           end
            
 %             tmpMisfit = getMisfit(x{end},S{end});
 %             Bz = tmpMisfit(3:end);
