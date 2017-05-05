@@ -4,9 +4,13 @@
 clear all
 clc
 
-fileName = '../TaylorGlacierSkyTEMdata/TaylorGlacier_dat.xyz';
-Q = SkyTEMDataProc(fileName,500);
-load('SynthDataNoise.txt');
+fileName = 'TaylorGlacierSkyTEMdata/TaylorGlacier';
+%fileName = 'TaylorGlacierSkyTEMdata/TaylorValley_dat.xyz';
+lineNum = 2230;
+Q = SkyTEMDataProc(fileName,lineNum);
+%load('SynthDataNoise.txt');
+%FID number
+FID = Q.FID;
 %gate times
 times = Q.times;
 %separate out the high mode and low mode times into separate arrays, get
@@ -14,13 +18,13 @@ times = Q.times;
 k = 1;
 l = 1;
 for j=1:length(times)
-    if( isnan(Q.dataHM(j)) == 0 )
+    if( length(Q.dataHM) > 0 && isnan(Q.dataHM(j)) == 0 )
         HighMode.times(k) = times(j);
         HighMode.data(k) = Q.dataHM(j);
         HighMode.sd(k) = Q.dataHM(j)*Q.dataErrHM(j);
         k = k + 1;
     end
-    if( isnan(Q.dataLM(j)) == 0 )
+    if( length(Q.dataLM) > 0 && isnan(Q.dataLM(j)) == 0 )
         LowMode.times(l) = times(j);
         LowMode.data(l) = Q.dataLM(j);
         LowMode.sd(l) = Q.dataLM(j)*Q.dataErrLM(j);
@@ -53,18 +57,22 @@ xyPolyTx = [ -15.09  2.00 ;
 
 %normalize the data by the area of the loop
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
-HighMode.data = HighMode.data/area;
-HighMode.sd = HighMode.sd/area;
-LowMode.data = LowMode.data/area;
-LowMode.sd = LowMode.sd/area;
+if( length(Q.dataHM) > 0 )
+    HighMode.data = HighMode.data/area;
+    HighMode.sd = HighMode.sd/area;
+end
+if( length(Q.dataLM) > 0 )
+    LowMode.data = LowMode.data/area;
+    LowMode.sd = LowMode.sd/area;
+end
                  
 %Parameters needed for the Bayesian inversion
-numIterations = 2e5;
+numIterations = 5e5;
 saveEvery = 1e4;   
 log10rho_min = -1;  %min resistivity allowed
 log10rho_max = 5;    %max resistivity allowed
 zMin = 0.0;          %min interface depth allowed
-zMax = 250;          %max interface depth allowed
+zMax = 600;          %max interface depth allowed
 kMax = 35;           %max number of layers allowed
 kMin = 1;            %min number of layers allowed
 nFreqsPerDecade = 10;   %density of Fourier domain sampling
@@ -130,19 +138,62 @@ DataFile = 'SkyTEMinvSetup.mat';
 save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
               'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
               'kMin','kMax','zMin','zMax','log10rho_min','log10rho_max',...
-              'numIterations','saveEvery','lowPassFilters','z','rho');
+              'numIterations','saveEvery','lowPassFilters','z','rho','FID','fileName');
+          
+%% Data plotting
+
+U = load('Trash/SkyTEMinvSetup_PT_RJMCMC_1.mat');
+modnum = 1.35e5;
+ModelSig = 1./[rho 10.^(U.s_ll{modnum}.rhoh)];
+ModelZ = [z U.s_ll{modnum}.z];
+mu  = ones(size(ModelSig));
+BzHigh = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+    ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+    LoopQuadOrder,HighMode.ramp,lowPassFilters);
+BzHigh = BzHigh';
+eHM = HighMode.data+HighMode.sd;
+eHM = [ eHM ; HighMode.data-HighMode.sd];
+
+%plotting
+figure(7)
+loglog(HighMode.times,HighMode.data,'-ro')
+hold on
+loglog([HighMode.times;HighMode.times],eHM,'-','LineWidth',2)
+axis([ 0.8*min(HighMode.times) 1.2*max(HighMode.times) 0.8*min(HighMode.data) 1.2*max(HighMode.data) ])
+loglog(HighMode.times,abs(BzHigh),'-*')
+xlabel('time (s)')
+ylabel('dBz/dt')
+title(['Datafit for model number ' num2str(modnum)])
+hold off
+
+figure(8)
+semilogx(HighMode.times,(abs(HighMode.data)-abs(BzHigh))./(HighMode.sd),'o','LineWidth',2)
+xlabel('time (s)')
+ylabel('Error-normalized residual')
+title(['Normalized residuals for model number ' num2str(modnum)])
+
+%%  Exporting coordinates of data sounding
           
 %output the lon-lat of the datapoints I have inverted
-InvertedXY = [ Q.XYcoord(5,:) ; Q.XYcoord(49,:) ; Q.XYcoord(2425,:) ; ...
-    Q.XYcoord(3470,:) ; Q.XYcoord(3000,:) ];
-[Lon, Lat] = UTM2LonLat(InvertedXY(:,1),InvertedXY(:,2),58,'S');
-Qout = [Lon Lat];
-dlmwrite('InvertedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
+%Taylor Valley
+% InvertedXY = [ Q.XYcoord(18650,:) ; Q.XYcoord(18800,:) ;...
+%     Q.XYcoord(280,:) ; Q.XYcoord(6680,:) ];
+% [Lon, Lat] = UTM2LonLat(InvertedXY(:,1),InvertedXY(:,2),58,'S');
+% Qout = [Lon Lat];
+% dlmwrite('InvertedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
 
-PropXY = [ Q.XYcoord(500,:) ];
+% %Taylor Glacier
+% InvertedXY = [ Q.XYcoord(2425,:) ; Q.XYcoord(5,:) ;...
+%     Q.XYcoord(3470,:) ; Q.XYcoord(3000,:) ; Q.XYcoord(500,:) ];
+% [Lon, Lat] = UTM2LonLat(InvertedXY(:,1),InvertedXY(:,2),58,'S');
+% Qout = [Lon Lat];
+% dlmwrite('InvertedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
+
+
+PropXY = [ Q.XYcoord(lineNum,:) ];
 [Lon, Lat] = UTM2LonLat(PropXY(:,1),PropXY(:,2),58,'S');
 Qout = [Lon Lat];
-dlmwrite('ProposedLonLatData.txt',Qout,'Delimiter',',','Precision',8)
+dlmwrite(['LonLat/LonLat' num2str(lineNum) '.txt'],Qout,'Delimiter',',','Precision',8)
        
 
 
