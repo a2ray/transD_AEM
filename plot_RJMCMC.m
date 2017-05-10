@@ -28,7 +28,7 @@ m = 2; %Archie's Law exponent (sig = sig_w*phi^m)
 nPhiSampling = 20; %how many values of porosity and pore fluid resistivity you want to evaluate
 phi_ = linspace(-2,-0.69,nPhiSampling); %log10(porosity) values to calculate sig_w over
 rhoW_ = linspace(-1.5,0.5,nPhiSampling); %log10(pore fluid resisitivity) values to calc porosity over
-zBrine = 195; %depth (m) at which we want to evaluate brine resistivity
+zBrine = 272.5; %depth (m) at which we want to evaluate brine resistivity
 rhoBrine = zeros(length(samples),1);
 Porosity_PFR = zeros(nSamples,nPhiSampling,2); %holds the porosity and pore fluid resistivity values
 for j=1:nSamples
@@ -113,8 +113,8 @@ kOut = kTracker;
 
 
 % parameters for statistics of conductive layer
-conductor_top = 290.0;
-conductor_bottom = 360.0;
+conductor_top = 230.0;
+conductor_bottom = 277.5;
 conductor_samples = [];
 
 
@@ -385,8 +385,8 @@ title('Marginal PDF over the depth of the conductor')
 
 %compute the median, 25th, and 75th percentiles over a "conductor" portion
 %of marginal PDF
-a = 0.32; %minimum rho consistent with conductor portion of marginal PDF
-b = 2.24; %maximum rho consistent with conductor portion of marginal PDF
+a = -0.4; %minimum rho consistent with conductor portion of marginal PDF
+b = 1.28; %maximum rho consistent with conductor portion of marginal PDF
 ConductiveSignal = conductor_samples(conductor_samples>=a & conductor_samples<=b);
 fprintf('\nmedian conductivity: %f\n',median(ConductiveSignal))
 fprintf('25th percentile of conductivity: %f,\n', prctile(ConductiveSignal,25))
@@ -396,18 +396,18 @@ fprintf('75th percentile of conductivity: %f\n\n', prctile(ConductiveSignal,75))
 fprintf('\nMedian Conductance = %f\n',median(Conductance))
 fprintf('25th percentile of Conductance = %f\n',prctile(Conductance,25))
 fprintf('75th percentile of Conductance = %f\n\n',prctile(Conductance,75))
-x1 = 210.0;
-x2 = 237.5;
-x3 = 262.5;
-maxT = 60;%x3-x1;
-minT = 20;%x2-x1;
-likelyT = 42.5;%(maxT+minT)/2;
+x1 = 232.5;
+x2 = 270.0;
+x3 = 292.5;
+maxT = x3-x1;
+minT = x2-x1;
+likelyT = (maxT+minT)/2;
 fprintf('\nAn upper estimate on log10 resistivity: %f\n',-log10(prctile(Conductance,25)/maxT))
 fprintf('A lower estimate on log10 resistivity: %f\n',-log10(prctile(Conductance,75)/minT))
 fprintf('A likely estimate on log10 resistivity: %f\n\n',-log10(median(Conductance)/likelyT))
 
 figure(97)
-tmp = Conductance( Conductance < prctile(Conductance,100));
+tmp = Conductance( Conductance < prctile(Conductance,90));
 histogram(tmp)
 xlabel('Conductance  ( sigma x thickness )')
 ylabel('Bin count')
@@ -429,9 +429,19 @@ end
 
 
 %estimate DOI ( x in [0,1] )
-DOI = (confidH_New(:,2) - confidH_New(:,1))/(S.rhMax-S.rhMin);
+DOI = 1 - (confidH_New(:,2) - confidH_New(:,1))/(S.rhMax-S.rhMin);
 figure(101)
-plot(DOI,binnedZ)
+plot(DOI,binnedZ,'LineWidth',2)
+hhh = gca;
+hhh.YDir = 'reverse';
+hold on
+plot(xlim,RegSol.DOI(1)*ones(1,2),'LineWidth',2)
+plot(xlim,RegSol.DOI(2)*ones(1,2),'LineWidth',2)
+ylabel('Depth (m)')
+xlabel('log_{10}( rho )  (Ohm-m)')
+title('Data sensitivity vs depth')
+legend('Data sensitivity','upper DOI estimate','lower DOI estimate')
+
 
 
 
