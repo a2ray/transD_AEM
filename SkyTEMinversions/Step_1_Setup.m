@@ -145,9 +145,13 @@ save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
 U = load('Trash/SkyTEMinvSetup_PT_RJMCMC_1.mat');
 iComputed = find(U.k_ll,1,'last');
 NtoPlot = 10;
+burnIn = 5000;  %if you don't want to use this, set it to 1
 BzHigh = zeros(NtoPlot,length(HighMode.times));
 for l=1:NtoPlot
     indexes(l) = ceil(iComputed*rand);
+    while( indexes(l) < burnIn )
+        indexes(l) = ceil(iComputed*rand);
+    end
     ModelSig = 1./[rho 10.^(U.s_ll{indexes(l)}.rhoh)];
     ModelZ = [z U.s_ll{indexes(l)}.z];
     mu  = ones(size(ModelSig));
