@@ -6,7 +6,7 @@ clc
 
 fileName = 'TaylorGlacierSkyTEMdata/TaylorGlacier';
 %fileName = 'TaylorGlacierSkyTEMdata/TaylorValley_dat.xyz';
-lineNum = 2230;
+lineNum = 2200;
 Q = SkyTEMDataProc(fileName,lineNum);
 %load('SynthDataNoise.txt');
 %FID number
@@ -43,8 +43,8 @@ end
 %xy-coordinates of the receiver (same datum for z as the model)
 zTx     = -Q.alt; 
 xyRx    = [17 0]; 
-LowMode.zRx = -(zTx + 1.90);
-HighMode.zRx = -(zTx + 0.19);         
+LowMode.zRx = (zTx - 1.90);
+HighMode.zRx = (zTx - 0.19);         
 % coordinates of the vertices of the transmitter loop polygon
 xyPolyTx = [ -15.09  2.00 ;
              -15.09 -2.00 ; 
@@ -130,27 +130,38 @@ rho = 1/sig(1:nFixedLayers);
 z   = z(1:nFixedLayers+1);    % Layer boundaries for fixed layers
 
 %name of folder to save output from Bayesian inversion
-outputFolder = 'SkyTEMinversions/Trash';
+outputFolder = '.';
 %name of file to save the structure that contains all of these parameters,
 %data, etc
-DataFile = 'SkyTEMinvSetup.mat'; 
+DataFile = ['SkyTEM-' num2str(lineNum) '-FID' num2str(FID) '.mat']; 
 %save this setup to the .mat file
 save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
               'HankelFilterName','CosSinFilterName','nFreqsPerDecade',...
               'kMin','kMax','zMin','zMax','log10rho_min','log10rho_max',...
               'numIterations','saveEvery','lowPassFilters','z','rho','FID','fileName');
           
-%% Data plotting
+%% Data plotting - modeled data validation
 
 U = load('Trash/SkyTEMinvSetup_PT_RJMCMC_1.mat');
-modnum = 1.35e5;
-ModelSig = 1./[rho 10.^(U.s_ll{modnum}.rhoh)];
-ModelZ = [z U.s_ll{modnum}.z];
-mu  = ones(size(ModelSig));
-BzHigh = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
-    ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
-    LoopQuadOrder,HighMode.ramp,lowPassFilters);
-BzHigh = BzHigh';
+iComputed = find(U.k_ll,1,'last');
+NtoPlot = 10;
+BzHigh = zeros(NtoPlot,length(HighMode.times));
+for l=1:NtoPlot
+    indexes(l) = ceil(iComputed*rand);
+    ModelSig = 1./[rho 10.^(U.s_ll{indexes(l)}.rhoh)];
+    ModelZ = [z U.s_ll{indexes(l)}.z];
+    mu  = ones(size(ModelSig));
+    BzHigh(l,:) = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+        ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+        LoopQuadOrder,HighMode.ramp,lowPassFilters);
+end
+% ModelSig = 1./[rho 10.^(U.s_ll{modnum}.rhoh)];
+% ModelZ = [z U.s_ll{modnum}.z];
+% mu  = ones(size(ModelSig));
+% BzHigh = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+%     ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+%     LoopQuadOrder,HighMode.ramp,lowPassFilters);
+% BzHigh = BzHigh';
 eHM = HighMode.data+HighMode.sd;
 eHM = [ eHM ; HighMode.data-HighMode.sd];
 
@@ -158,19 +169,50 @@ eHM = [ eHM ; HighMode.data-HighMode.sd];
 figure(7)
 loglog(HighMode.times,HighMode.data,'-ro')
 hold on
-loglog([HighMode.times;HighMode.times],eHM,'-','LineWidth',2)
+loglog([HighMode.times;HighMode.times],eHM,'-k','LineWidth',2)
 axis([ 0.8*min(HighMode.times) 1.2*max(HighMode.times) 0.8*min(HighMode.data) 1.2*max(HighMode.data) ])
-loglog(HighMode.times,abs(BzHigh),'-*')
+for l=1:NtoPlot
+    loglog(HighMode.times,abs(BzHigh(l,:)),'-*','Color',[0.8 0.8 0.8])
+end
 xlabel('time (s)')
 ylabel('dBz/dt')
-title(['Datafit for model number ' num2str(modnum)])
+title(['Datafit for ' num2str(NtoPlot) ' models'])
 hold off
 
 figure(8)
 semilogx(HighMode.times,(abs(HighMode.data)-abs(BzHigh))./(HighMode.sd),'o','LineWidth',2)
 xlabel('time (s)')
 ylabel('Error-normalized residual')
-title(['Normalized residuals for model number ' num2str(modnum)])
+title(['Normalized residuals for ' num2str(NtoPlot) ' models'])
+
+% %retrieve the smooth inversion result
+% RegSol = SkyTEMInvProc(fileName,FID);
+% RegSol.z = [ z(1) RegSol.z ];
+% RegSol.sig = 1./[ rho RegSol.inv ];
+% RegSol.mu  = ones(size(RegSol.sig));
+% BzReg = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+%     RegSol.sig,RegSol.mu,RegSol.z,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+%     LoopQuadOrder,HighMode.ramp,lowPassFilters);
+% BzReg = BzReg';
+% 
+% %plotting
+% figure(9)
+% loglog(HighMode.times,HighMode.data,'-ro')
+% hold on
+% loglog([HighMode.times;HighMode.times],eHM,'-','LineWidth',2)
+% axis([ 0.8*min(HighMode.times) 1.2*max(HighMode.times) 0.8*min(HighMode.data) 1.2*max(HighMode.data) ])
+% loglog(HighMode.times,abs(BzReg),'-*')
+% xlabel('time (s)')
+% ylabel('dBz/dt')
+% title(['Datafit for model number ' num2str(modnum)])
+% hold off
+% 
+% figure(10)
+% semilogx(HighMode.times,(abs(HighMode.data)-abs(BzReg))./(HighMode.sd),'o','LineWidth',2)
+% xlabel('time (s)')
+% ylabel('Error-normalized residual')
+% title(['Normalized residuals for model number ' num2str(modnum)])
+
 
 %%  Exporting coordinates of data sounding
           
@@ -194,6 +236,7 @@ PropXY = [ Q.XYcoord(lineNum,:) ];
 [Lon, Lat] = UTM2LonLat(PropXY(:,1),PropXY(:,2),58,'S');
 Qout = [Lon Lat];
 dlmwrite(['LonLat/LonLat' num2str(lineNum) '.txt'],Qout,'Delimiter',',','Precision',8)
+dlmwrite(['xy/xy' num2str(lineNum) '.txt'],PropXY,'Delimiter',',','Precision',8)
        
 
 
