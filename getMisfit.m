@@ -56,7 +56,10 @@ end
     elseif( S.DataType == 2 )
         resid = (abs(S.HighMode.data)-abs(Bz'))./S.HighMode.sd;
         rms_total = sqrt(resid*resid'/length(resid));
-        Chi2By2 = resid*resid'/2;
+        N = length(S.HighMode.sd);
+        Chi2By2 = N/2 * log(resid*resid');
+        %misfit = [ Chi2By2 rms_total Bz' ];
+        
         misfit = [ Chi2By2 rms_total Bz' ];
         %fprintf('We are in the high mode getMisfit section!\n')
     else
