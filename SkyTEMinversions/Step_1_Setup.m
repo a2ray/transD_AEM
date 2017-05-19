@@ -6,7 +6,7 @@ clc
 
 fileName = 'TaylorGlacierSkyTEMdata/TaylorGlacier';
 %fileName = 'TaylorGlacierSkyTEMdata/TaylorValley_dat.xyz';
-lineNum = 2200;
+lineNum = 2590;
 Q = SkyTEMDataProc(fileName,lineNum);
 %load('SynthDataNoise.txt');
 %FID number
@@ -130,7 +130,7 @@ rho = 1/sig(1:nFixedLayers);
 z   = z(1:nFixedLayers+1);    % Layer boundaries for fixed layers
 
 %name of folder to save output from Bayesian inversion
-outputFolder = '.';
+outputFolder = 'SkyTEMinversions/Trash';
 %name of file to save the structure that contains all of these parameters,
 %data, etc
 DataFile = ['SkyTEM-' num2str(lineNum) '-FID' num2str(FID) '.mat']; 
@@ -142,52 +142,60 @@ save(DataFile,'HighMode','LowMode','xyPolyTx','zTx','xyRx','LoopQuadOrder',...
           
 %% Data plotting - modeled data validation
 
-U = load('Trash/SkyTEMinvSetup_PT_RJMCMC_1.mat');
-iComputed = find(U.k_ll,1,'last');
-NtoPlot = 10;
-burnIn = 5000;  %if you don't want to use this, set it to 1
-BzHigh = zeros(NtoPlot,length(HighMode.times));
-for l=1:NtoPlot
-    indexes(l) = ceil(iComputed*rand);
-    while( indexes(l) < burnIn )
-        indexes(l) = ceil(iComputed*rand);
-    end
-    ModelSig = 1./[rho 10.^(U.s_ll{indexes(l)}.rhoh)];
-    ModelZ = [z U.s_ll{indexes(l)}.z];
-    mu  = ones(size(ModelSig));
-    BzHigh(l,:) = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
-        ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
-        LoopQuadOrder,HighMode.ramp,lowPassFilters);
-end
-% ModelSig = 1./[rho 10.^(U.s_ll{modnum}.rhoh)];
-% ModelZ = [z U.s_ll{modnum}.z];
-% mu  = ones(size(ModelSig));
-% BzHigh = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
-%     ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
-%     LoopQuadOrder,HighMode.ramp,lowPassFilters);
-% BzHigh = BzHigh';
-eHM = HighMode.data+HighMode.sd;
-eHM = [ eHM ; HighMode.data-HighMode.sd];
+% U = load(['Trash/SkyTEM-' num2str(lineNum) '-FID' num2str(FID) '_PT_RJMCMC_4.mat']);
+% iComputed = find(U.k_ll,1,'last');
+% NtoPlot = 50;
+% burnIn = 5000;  %if you don't want to use this, set it to 1
+% BzHigh = zeros(NtoPlot,length(HighMode.times));
+% for k=1:500
+%     rand;
+% end
+% for l=1:NtoPlot
+%     indexes(l) = ceil(iComputed*rand);
+%     while( indexes(l) < burnIn )
+%         indexes(l) = ceil(iComputed*rand);
+%     end
+%     ModelSig = 1./[rho 10.^(U.s_ll{indexes(l)}.rhoh)];
+%     ModelZ = [z U.s_ll{indexes(l)}.z];
+%     mu  = ones(size(ModelSig));
+%     BzHigh(l,:) = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+%         ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+%         LoopQuadOrder,HighMode.ramp,lowPassFilters);
+% end
 
-%plotting
-figure(7)
-loglog(HighMode.times,HighMode.data,'-ro')
-hold on
-loglog([HighMode.times;HighMode.times],eHM,'-k','LineWidth',2)
-axis([ 0.8*min(HighMode.times) 1.2*max(HighMode.times) 0.8*min(HighMode.data) 1.2*max(HighMode.data) ])
-for l=1:NtoPlot
-    loglog(HighMode.times,abs(BzHigh(l,:)),'-*','Color',[0.8 0.8 0.8])
-end
-xlabel('time (s)')
-ylabel('dBz/dt')
-title(['Datafit for ' num2str(NtoPlot) ' models'])
-hold off
+% % ModelSig = 1./[rho 10.^(U.s_ll{modnum}.rhoh)];
+% % ModelZ = [z U.s_ll{modnum}.z];
+% % mu  = ones(size(ModelSig));
+% % BzHigh = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+% %     ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+% %     LoopQuadOrder,HighMode.ramp,lowPassFilters);
+% % BzHigh = BzHigh';
 
-figure(8)
-semilogx(HighMode.times,(abs(HighMode.data)-abs(BzHigh))./(HighMode.sd),'o','LineWidth',2)
-xlabel('time (s)')
-ylabel('Error-normalized residual')
-title(['Normalized residuals for ' num2str(NtoPlot) ' models'])
+% eHM = HighMode.data+HighMode.sd;
+% eHM = [ eHM ; HighMode.data-HighMode.sd];
+
+% %plotting
+% figure(7)
+% loglog(HighMode.times,HighMode.data,'-ro','LineWidth',2)
+% hold on
+% loglog([HighMode.times;HighMode.times],eHM,'-k','LineWidth',2)
+% axis([ 0.8*min(HighMode.times) 1.2*max(HighMode.times) 0.8*min(HighMode.data) 1.2*max(HighMode.data) ])
+% for l=1:NtoPlot
+%     loglog(HighMode.times,abs(BzHigh(l,:)),'-*','Color',[0.8 0.8 0.8])
+% end
+% xlabel('time (s)')
+% ylabel('dBz/dt')
+% title(['Datafit for ' num2str(NtoPlot) ' models'])
+% hold off
+% 
+% v = ceil(NtoPlot*rand);
+% r = (abs(HighMode.data)-abs(BzHigh(v,:)))./(HighMode.sd);
+% figure(8)
+% semilogx(HighMode.times,r,'o','LineWidth',2)
+% axis([ 0.8*min(HighMode.times), 1.2*max(HighMode.times), 0.8*min(r), 1.2*max(r)])
+% xlabel('time (s)')
+% ylabel('Error-normalized residual')
+% title(['Normalized residuals for randomly selected model'])
 
 % %retrieve the smooth inversion result
 % RegSol = SkyTEMInvProc(fileName,FID);
@@ -241,6 +249,41 @@ PropXY = [ Q.XYcoord(lineNum,:) ];
 Qout = [Lon Lat];
 dlmwrite(['LonLat/LonLat' num2str(lineNum) '.txt'],Qout,'Delimiter',',','Precision',8)
 dlmwrite(['xy/xy' num2str(lineNum) '.txt'],PropXY,'Delimiter',',','Precision',8)
-       
 
+%plots the convergence of these chains
+% tmp = ['SkyTEMinversions/Trash/SkyTEM-' num2str(lineNum) '-FID' num2str(FID) '_PT_RJMCMC'];
+% plot_convergence_PT_RJMCMC(tmp)
+
+% %% Correlation and Covariance
+% 
+% U = load(['Trash/SkyTEM-' num2str(lineNum) '-FID' num2str(FID) '_PT_RJMCMC_4.mat']);
+% iComputed = find(U.k_ll,1,'last');
+% NtoPlot = 1000;
+% burnIn = 5000;  %if you don't want to use this, set it to 1
+% 
+% BzHigh = zeros(NtoPlot,length(HighMode.times));
+% r = BzHigh;
+% 
+% for k=1:500
+%     rand;
+% end
+% 
+% for l=1:NtoPlot
+%     indexes(l) = ceil(iComputed*rand);
+%     while( indexes(l) < burnIn )
+%         indexes(l) = ceil(iComputed*rand);
+%     end
+%     ModelSig = 1./[rho 10.^(U.s_ll{indexes(l)}.rhoh)];
+%     ModelZ = [z U.s_ll{indexes(l)}.z];
+%     mu  = ones(size(ModelSig));
+%     BzHigh(l,:) = get_LoopFields_TD_FHT(HighMode.times,xyPolyTx,zTx,xyRx,HighMode.zRx,...
+%         ModelSig,mu,ModelZ,HankelFilterName,CosSinFilterName,nFreqsPerDecade,...
+%         LoopQuadOrder,HighMode.ramp,lowPassFilters);
+%     r(l,:) = (abs(HighMode.data)-abs(BzHigh(l,:)))./HighMode.sd;
+%     if( mod(l,100) == 0 )
+%         fprintf('%d\n',l)
+%     end
+% end
+% sd = HighMode.sd;
+% save('Residuals.mat','r','sd')
 
