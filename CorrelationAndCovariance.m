@@ -1,6 +1,6 @@
-clear all
-close all
-clc
+% clear all
+% close all
+% clc
 
 Q = load('Residuals.mat');
 ndata = size(Q.r,2);
@@ -51,3 +51,16 @@ shading flat
 xlabel('Data point number')
 ylabel('Normalized residual')
 title('Histograms of normalized residuals for each data point')
+
+rpForAll = sum(rp,2);
+rpForAll = rpForAll(1:end-1);
+rpForAll = rpForAll/((BinEdges(3)-BinEdges(2))*sum(rpForAll));
+stdG = (1/sqrt(2*pi)) * exp(-(BinEdges).^2);
+figure(5)
+plot(BinEdges,rpForAll,'LineWidth',3)
+hold on
+plot(BinEdges,stdG,'--','LineWidth',2)
+xlabel('\sigma')
+ylabel('probability density')
+legend('estimated distribution','standard Gaussian')
+title('Estimated data residual distribution')
