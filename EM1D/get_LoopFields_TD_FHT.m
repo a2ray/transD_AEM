@@ -95,6 +95,12 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
        freqLowLimit = n/max(times);
     end
     
+    % Always apply a 10^7 Hz high cut filter to avoid numerical issues with
+    % the TDEM transforms (note filter is applied to frequencyies needed by
+    % digital filter transform, which often extend past sampled ranged
+    % defined by freqLowLimit to freqHighLimit
+    lowPassFilters = [lowPassFilters(:); 10^7];
+    
 %
 % Step 1: Get frequency domain fields for a broad sweep:
 %
