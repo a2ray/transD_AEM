@@ -60,7 +60,7 @@ end
         Chi2By2 = N/2 * log(resid*resid');
         %misfit = [ Chi2By2 rms_total Bz' ];
         
-        misfit = [ Chi2By2 rms_total Bz' ];
+        misfit = [ Chi2By2 Chi2By2 Bz' ];
         %fprintf('We are in the high mode getMisfit section!\n')
     else
         nHM = length(S.HighMode.sd);
