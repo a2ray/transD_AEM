@@ -28,7 +28,7 @@ m = 2; %Archie's Law exponent (sig = sig_w*phi^m)
 nPhiSampling = 20; %how many values of porosity and pore fluid resistivity you want to evaluate
 phi_ = linspace(-2,-0.69,nPhiSampling); %log10(porosity) values to calculate sig_w over
 rhoW_ = linspace(-1.5,0.5,nPhiSampling); %log10(pore fluid resisitivity) values to calc porosity over
-zBrine = 272.5; %depth (m) at which we want to evaluate brine resistivity
+zBrine = 327.5; %depth (m) at which we want to evaluate brine resistivity
 rhoBrine = zeros(length(samples),1);
 Porosity_PFR = zeros(nSamples,nPhiSampling,2); %holds the porosity and pore fluid resistivity values
 for j=1:nSamples
@@ -65,16 +65,22 @@ end
 %create the meshgrids for plotting
 [RHOW_,PORO_] = meshgrid(binEdgesPFR,phi_);
 [PORO,RHOW] = meshgrid(binEdgesPoro,rhoW_);
-figure(1)
+%for writing output to text file
+u = find(PORO(end,:) > -1,1,'first');
+v = PoroPDF(:,u);
+dlmwrite('PFRporo=0.1.txt',v)
+
+figure(19)
 pcolor(PORO,RHOW,PoroPDF)
 xlabel('log_{10} porosity (%)')
 ylabel('log_{10} pore fluid resistivity (ohm-m) (chosen values)')
 title('Porosity likelihood for chosen values of pore fluid resistivity')
-figure(2)
-pcolor(RHOW_,PORO_,PFRPDF)
-xlabel('log_{10} pore fluid resistivity (ohm-m) (predicted values)')
-ylabel('log_{10} porosity (%) (chosen values)')
-title('Pore fluid resistivity likelihood for chosen values of porosity')
+keyboard
+% figure(2)
+% pcolor(RHOW_,PORO_,PFRPDF)
+% xlabel('log_{10} pore fluid resistivity (ohm-m) (predicted values)')
+% ylabel('log_{10} porosity (%) (chosen values)')
+% title('Pore fluid resistivity likelihood for chosen values of porosity')
 %keyboard
 
 %%
@@ -113,8 +119,8 @@ kOut = kTracker;
 
 
 % parameters for statistics of conductive layer
-conductor_top = 230.0;
-conductor_bottom = 277.5;
+conductor_top = 232.5;
+conductor_bottom = 372.5;
 conductor_samples = [];
 
 
@@ -355,6 +361,8 @@ Resistance = zeros(1,length(samples));
 Conductance = Resistance;
 dz = 1;%depth_int;
 %compute resistance = rho*thickness over the depth of the conductor
+a = 0.08; %minimum rho consistent with conductor portion of marginal PDF
+b = 2.24; %maximum rho consistent with conductor portion of marginal PDF
 tic
 for l=1:length(samples)
     Z = [ 0 samples{l}.z S.zMax ];
@@ -364,8 +372,10 @@ for l=1:length(samples)
             break
         end
         while( z > Z(j) && z <= Z(j+1) )           
-            Resistance(l) = Resistance(l) + 10.^(samples{l}.rhoh(j));
-            Conductance(l) = Conductance(l) + 10.^(-samples{l}.rhoh(j));
+            if( samples{l}.rhoh(j) > a )
+                Resistance(l) = Resistance(l) + 10.^(samples{l}.rhoh(j));
+                Conductance(l) = Conductance(l) + 10.^(-samples{l}.rhoh(j));
+            end
             z = z + dz;
         end
     end   
@@ -377,6 +387,7 @@ toc
 %plot the marginal PDF over the depth of the conductor
 conductorMarginalPDF = histc(conductor_samples,edges);
 conductorMarginalPDF = conductorMarginalPDF/((edges(3)-edges(2))*sum(conductorMarginalPDF));
+
 figure(99)
 plot(edges,conductorMarginalPDF,'LineWidth',2)
 xlabel('log_{10} resistivity (Ohm-m)')
@@ -385,9 +396,11 @@ title('Marginal PDF over the depth of the conductor')
 
 %compute the median, 25th, and 75th percentiles over a "conductor" portion
 %of marginal PDF
-a = -0.4; %minimum rho consistent with conductor portion of marginal PDF
-b = 1.28; %maximum rho consistent with conductor portion of marginal PDF
+keyboard
 ConductiveSignal = conductor_samples(conductor_samples>=a & conductor_samples<=b);
+%write to text file
+dlmwrite('conductorSamples.txt',conductor_samples)
+
 fprintf('\nmedian conductivity: %f\n',median(ConductiveSignal))
 fprintf('25th percentile of conductivity: %f,\n', prctile(ConductiveSignal,25))
 fprintf('75th percentile of conductivity: %f\n\n', prctile(ConductiveSignal,75))
@@ -396,9 +409,9 @@ fprintf('75th percentile of conductivity: %f\n\n', prctile(ConductiveSignal,75))
 fprintf('\nMedian Conductance = %f\n',median(Conductance))
 fprintf('25th percentile of Conductance = %f\n',prctile(Conductance,25))
 fprintf('75th percentile of Conductance = %f\n\n',prctile(Conductance,75))
-x1 = 232.5;
-x2 = 270.0;
-x3 = 292.5;
+x1 = 252.5;
+x2 = 282.5;
+x3 = 322.5;
 maxT = x3-x1;
 minT = x2-x1;
 likelyT = (maxT+minT)/2;
@@ -406,12 +419,18 @@ fprintf('\nAn upper estimate on log10 resistivity: %f\n',-log10(prctile(Conducta
 fprintf('A lower estimate on log10 resistivity: %f\n',-log10(prctile(Conductance,75)/minT))
 fprintf('A likely estimate on log10 resistivity: %f\n\n',-log10(median(Conductance)/likelyT))
 
+%write to text file
+dlmwrite('conductanceSamples.txt',Conductance)
+
 figure(97)
-tmp = Conductance( Conductance < prctile(Conductance,90));
-histogram(tmp)
+tmp = Conductance( Conductance < prctile(Conductance,98));
+qq = histogram(tmp);
+pp = qq.Values/(sum(qq.Values)*(qq.BinEdges(2)-qq.BinEdges(1)));
+vv = (qq.BinEdges(2:end)+qq.BinEdges(1:end-1))/2;
+plot(vv,pp,'LineWidth',2)
 xlabel('Conductance  ( sigma x thickness )')
-ylabel('Bin count')
-title('Conductivity-thickness product histogram')
+ylabel('Probability density')
+title('Conductivity-thickness product PDF')
 
 
 %retrieve the smooth inversion result
@@ -435,12 +454,12 @@ plot(DOI,binnedZ,'LineWidth',2)
 hhh = gca;
 hhh.YDir = 'reverse';
 hold on
-plot(xlim,RegSol.DOI(1)*ones(1,2),'LineWidth',2)
-plot(xlim,RegSol.DOI(2)*ones(1,2),'LineWidth',2)
+plot(xlim,RegSol.DOI(1)*ones(1,2),':k','LineWidth',2)
+plot(xlim,RegSol.DOI(2)*ones(1,2),'--k','LineWidth',2)
 ylabel('Depth (m)')
 xlabel('log_{10}( rho )  (Ohm-m)')
-title('Data sensitivity vs depth')
-legend('Data sensitivity','upper DOI estimate','lower DOI estimate')
+title('Model resolution vs depth')
+legend('model resolution','upper DOI estimate','lower DOI estimate','Location','NorthWest')
 
 
 
@@ -483,9 +502,9 @@ end
        %plot(meanModelH,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'b','linewidth',2)
        plot(medianModelH,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'k','linewidth',2)
        %plot(modeModelH,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'b','linewidth',2)
-       plot(RegSolInterp,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'g','linewidth',2)
-       plot(linspace(-1,5,length(binnedZ)),RegSol.DOI(1)*ones(length(binnedZ)),'m','linewidth',2)
-       plot(linspace(S.rhMin,S.rhMax,length(binnedZ)),RegSol.DOI(2)*ones(length(binnedZ)),'m','linewidth',2)
+       plot(RegSolInterp,zFixed(end)+depth_int/2+(0:nBins-1)*depth_int,'w','linewidth',2)
+       plot(linspace(-1,5,length(binnedZ)),RegSol.DOI(1)*ones(length(binnedZ)),'--k','linewidth',2)
+       plot(linspace(S.rhMin,S.rhMax,length(binnedZ)),RegSol.DOI(2)*ones(length(binnedZ)),'--k','linewidth',2)
 
 
     %  plot(edges(1)+rho_int/2+(maxV-1)*rho_int,S.zMin+depth_int/2+(0:nBins-1)*depth_int,'m')
@@ -503,7 +522,7 @@ end
     depthlim=ylim;
     hold on
      ylabel ('Depth (m)','fontsize',11);
-        caxis([-3 0])
+        caxis([-3 max(max(dat))])
      
 if ~strcmpi(isotropic,'isotropic')
     axes(hRhoh);
@@ -589,6 +608,7 @@ xlim([0,S.kMax])
 set(gca, 'fontsize',11)
 ylabel ('Probability of interfaces','fontsize',11)
 %set(gcf, 'Units','inches', 'Position',[0 0 3.3 2])
+keyboard
 end
 
 % function plot_model(S,x,which,lw)
