@@ -22,16 +22,23 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
 %     saveWindow = 10000; %keep it to 1e4
     saveWindow = S_0.saveEvery;
     
-    nDisplayEvery = 100;  % print message to screen
+    nDisplayEvery = 50;  % print message to screen
     
     %number of parallel chains (and temperatures)
-    nTemps = 4;
-    Tmax = 1.5;
+    nChains = 8;
+    nChainsAtOne = 3;
+    nTemps = nChains - (nChainsAtOne-1);
+    %nTemps = 4; 
     %nTemps = 1;
+    
+    Tmax = 2.0;
     
     %inverse temperature B ladder
     %B = logspace(-log10(2.5),0,nTemps);
-    B = logspace(-log10(Tmax),0,nTemps);
+    %B = logspace(-log10(1.5),0,nTemps);
+    a = logspace(-log10(Tmax),0,nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    B = [ a b ];
     
     %probability of swapping every count of the MCMC chain
     pSwap = 1;
@@ -40,17 +47,29 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
     %step sizes in model space in log10 resistivity, decreasing temperature
     %for update
     %UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
-    UstepSize = linspace(0.02, 0.01, nTemps);
+    a = linspace(0.025, 0.01, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    UstepSize = [ a b ];  %for nTemps = 6
+    %UstepSize = linspace(0.02, 0.01, nTemps);    %for nTemps = 4
     %UstepSize = [ 0.006 ];
     %for birth / death
     %BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
-    BstepSize = linspace(0.6, 0.4, nTemps);
+    a = linspace(0.65, 0.4, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    BstepSize = [ a b ];     %for nTemps = 6
+    %BstepSize = linspace(0.6, 0.4, nTemps);      %for nTemps = 4
+    a = linspace(1.5,0.4,nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    HstepSize = [ a b ];        %for the hFactor parameter
     %BstepSize = [ 0.4 ];
     
     %step sizes in model space depth in m, decreasing temperature
     %for move interface
     %MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
-    MstepSize = linspace(10, 7, nTemps);
+    a = linspace(11, 7, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    MstepSize = [ a b ];        %for nTemps = 6
+    %MstepSize = linspace(10, 7, nTemps);         %for nTemps = 4
     %MstepSize = [ 7 ];
     
  
@@ -69,11 +88,11 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
     
     %*** Shouldn't need to modify below this ***
     
-    if length(UstepSize) ~= nTemps || ...
-        length(BstepSize) ~= nTemps || ...
-        length(MstepSize) ~= nTemps
+    if length(UstepSize) ~= nChains || ...
+        length(BstepSize) ~= nChains || ...
+        length(MstepSize) ~= nChains
         beep
-        disp('less steps sizes than nTemps')
+        disp('less steps sizes than nChains')
         return
     end
     
@@ -135,17 +154,20 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
                 x{ii}.rhoh = x{ii}.rhov;
             else
                 x{ii}.rhoh = S_0.rhMin + (S_0.rhMax-S_0.rhMin)*rand(1,k{ii}+1);
-            end    
+            end  
+            x{ii}.hFactor = 0;
         else
             loadedMod = loadState.x{ii};
             k{ii} = length(loadedMod.z);
             x{ii} = loadedMod;
+            x{ii}.hFactor = 0;
         end    
             
         oldMisfit{ii} = getMisfit(x{ii},S_0);
         S{ii}.rSD1 = UstepSize(ii);
         S{ii}.rSD2 = BstepSize(ii);
         S{ii}.MoveSd = MstepSize(ii);
+        S{ii}.hFactorSD = HstepSize(ii);
     end
     
     %start MCMC
@@ -160,7 +182,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            aveIterRate     = tLength/count;
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
-           fprintf('RMS misfit: %f\n',oldMisfit{ii}(2))
+           fprintf('-log( likelihood) : %f\n',oldMisfit{ii}(2))
            if( S{ii}.DataType == 3 )
               fprintf('HM RMS, LM RMS: %f %f\n',oldMisfit{ii}(end-1),oldMisfit{ii}(end))
            end
