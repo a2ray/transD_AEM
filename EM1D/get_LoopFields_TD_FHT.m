@@ -95,6 +95,12 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
        freqLowLimit = n/max(times);
     end
     
+    % Always apply a 10^7 Hz high cut filter to avoid numerical issues with
+    % the TDEM transforms (note filter is applied to frequencyies needed by
+    % digital filter transform, which often extend past sampled ranged
+    % defined by freqLowLimit to freqHighLimit
+    lowPassFilters = [lowPassFilters(:); 10^7];
+    
 %
 % Step 1: Get frequency domain fields for a broad sweep:
 %
@@ -111,25 +117,33 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
   % Kernel for doing line integral along wire segments of Bz from a HED: 
     BzFD = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
     
+
 %
 % Step 1b: Apply front end filters, if input:
 %
-% Assumes lowPassFilters is arry of corner frequencies of first order
+% Assumes lowPassFilters is array of corner frequencies of first order
 % Butterworth filters:
+%
+% KWK note May 31 2017: Commenting this out here. It is safer to apply the 
+% filter AFTER interpolation inside the time domain transform loop. That 
+% way the spline extrapolation to filter frequencies outside the sampled
+% range won't go off to extreme values. So interpolate/extrapolate first,
+% then apply filter which will mute the high frequency response and any
+% errant extrapolation values.
+%
+%     if ~isempty(lowPassFilters)
+%        Hsc = 1;
+%        s = 1i*2*pi*freqs;
+%        for i = 1:length(lowPassFilters)
+%             fc = lowPassFilters(i);
+%             Hs = 1./( 1+s./(2*pi*fc));
+%             Hsc = Hsc.*Hs;
+%        end
+%         BzFD = BzFD.*conj(Hsc);
+%         
+%     end
 
-    if ~isempty(lowPassFilters)
-       Hsc = 1;
-       s = 1i*2*pi*freqs;
-       for i = 1:length(lowPassFilters)
-            fc = lowPassFilters(i);
-            Hs = 1./( 1+s./(2*pi*fc));
-            Hsc = Hsc.*Hs;
-       end
-        BzFD = BzFD.*conj(Hsc);
-        
-    end
- 
-
+    
 %
 % Step 2: Tranform to time domain:
 %
@@ -181,6 +195,36 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 
                 BzFpp  = ppval(PP,w); % get Bz at angular log10 freqs in w
                 
+                %
+                % Apply front end filters, if input:
+                %
+                % Assumes lowPassFilters is array of corner frequencies of first order
+                % Butterworth filters:                
+                if ~isempty(lowPassFilters)
+                   Hsc = 1;
+                   s = 1i*10.^w;
+                   for i = 1:length(lowPassFilters)
+                        fc = lowPassFilters(i);
+                        Hs = 1./( 1+s./(2*pi*fc));
+                        Hsc = Hsc.*Hs;
+                   end
+                    BzFpp = BzFpp.*conj(Hsc);
+
+                end
+
+% Plot for debugging: 
+%                 if itime == 1
+%                     figure;
+%                     loglog(freqs,abs(real(BzFD)),'b.-',freqs,abs(imag(BzFD)),'r.-')
+%                     title(sprintf('nFreqsPerDecade: %g',nFreqsPerDecade))
+%                     xlabel('Frequency (Hz)')
+%                     hold on;
+%                       loglog((10.^w)/(2*pi),abs(real(BzFpp)),'c.',(10.^w)/(2*pi),abs(imag(BzFpp)),'m.')
+%                       legend('Real Bz(f)', 'Imag Bz(f)','Real spline_Bz(f)', 'Imag spline_Bz(f)')
+%                 end
+%            
+                
+                
                 %kwk debug:
                 %BzFpp = get_PolygonFields_HED_FD_FHT(Filter.base/t/(2*pi),xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder).';
                 %BzFpp = get_LoopFields_FD_FHT(Filter.base/t/(2*pi),rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName).';
@@ -212,6 +256,22 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 
                 BzFpp  = ppval(PP,w); % get Bz at angular log10 freqs in w
             
+                %
+                % Apply front end filters, if input:
+                %
+                % Assumes lowPassFilters is array of corner frequencies of first order
+                % Butterworth filters:                
+                if ~isempty(lowPassFilters)
+                   Hsc = 1;
+                   s = 1i*10.^w;
+                   for i = 1:length(lowPassFilters)
+                        fc = lowPassFilters(i);
+                        Hs = 1./( 1+s./(2*pi*fc));
+                        Hsc = Hsc.*Hs;
+                   end
+                    BzFpp = BzFpp.*conj(Hsc);
+                end
+                
                 BzFpp  = -imag(BzFpp)*2/pi; % scale for impulse response
 
                 %

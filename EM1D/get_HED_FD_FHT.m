@@ -65,6 +65,7 @@ function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
     %
     % Loop over receivers
     %
+    Bz = zeros(length(rRx),length(freqs));
     for iRx = 1:length(rRx)
 
         % FHT:
@@ -91,7 +92,6 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     epsilon   = 8.8541878176d-12;
         
     dz        = diff(z);
-    nz        = length(z);
     hh        = [1d60 dz(2:end) 1d60];
     
     iTxlayer = find(z < zTx,1,'last');
@@ -132,9 +132,11 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     %
     % Compute r+ and r- layer coefficients:
     %
-    rp = ( MU(2:end,:,:).*gamma(1:end-1,:,:) - gamma(2:end,:,:).*MU(1:end-1,:,:) ) ./ ...
-         ( MU(2:end,:,:).*gamma(1:end-1,:,:) + gamma(2:end,:,:).*MU(1:end-1,:,:) );
-    rm = complex(zeros(size(rp,1)+1,size(rp,2),size(rp,3)));
+    mu2g1 = MU(2:end,:,:).*gamma(1:end-1,:,:);
+    g2mu1 = gamma(2:end,:,:).*MU(1:end-1,:,:); 
+    rp    = ( mu2g1 - g2mu1 ) ./ ...
+            ( mu2g1 + g2mu1 );
+    rm    = complex(zeros(size(rp,1)+1,size(rp,2),size(rp,3)));
     
     rm(2:length(sig),:,:) = -rp;
     
@@ -143,8 +145,9 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     %        
     for i = length(sig)-1:-1:iTxlayer
         Rp(i+1,:,:) = Rp(i+1,:,:).*expgh(i+1,:,:);  % post applied to avoid positive exp in a,b formulation 
-        Rp(i,:,:)   = ( rp(i,:,:) +        Rp(i+1,:,:).*expgh(i+1,:,:)) ./ ...
-                      ( 1     + rp(i,:,:).*Rp(i+1,:,:).*expgh(i+1,:,:));
+        Rpexpgh     =  Rp(i+1,:,:).*expgh(i+1,:,:);
+        Rp(i,:,:)   = ( rp(i,:,:) +            Rpexpgh) ./ ...
+                      ( 1         + rp(i,:,:).*Rpexpgh);
     end
 
     %
@@ -152,8 +155,9 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
     %
     for i = 2:iTxlayer
         Rm(i-1,:,:) = Rm(i-1,:,:).*expgh(i-1,:,:);  % post applied to avoid positive exp in a,b formulation 
-        Rm(i,:,:)   = ( rm(i,:,:) +       Rm(i-1,:,:).*expgh(i-1,:,:)) ./ ...
-                      ( 1    + rm(i,:,:).*Rm(i-1,:,:).*expgh(i-1,:,:));
+        Rmexpgh     = Rm(i-1,:,:).*expgh(i-1,:,:);
+        Rm(i,:,:)   = ( rm(i,:,:) +            Rmexpgh) ./ ...
+                      ( 1         + rm(i,:,:).*Rmexpgh);
     end
 
     %

@@ -4,7 +4,7 @@ function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,
 % shaped loop of wire in the horizontal plane. 
 % It does so by carrying out a line integral of the
 % vertical magnetic field produced by infinitesimal horizontal electric dipoles
-% alond the wire segments. The integration is performed using Gauss
+% along the wire segments. The integration is performed using Gauss
 % quadarature. Use get_HED_FD_FHT to compute Bz field from a point HED 
 %
 
@@ -106,7 +106,8 @@ for k=1:5%nvertices %change this back to nvertices if using anything other than 
 end
 
 nrsplines = 3; %number of spline points to use for the rRx spline interpolation
-R = linspace(rRx_(1),rRx_(end),nrsplines);
+% R = linspace(rRx_(1),rRx_(end),nrsplines);
+R = linspace(min(rRx_),max(rRx_),nrsplines);
 
 %get the frequency response Bz at each of the spline points, for theta = 90
 for j=1:nrsplines
@@ -122,19 +123,16 @@ Bz = 0.0*Bz;
 for l=1:size(BzP,2)
     if( l > GQorder && l < size(BzP,2)-(GQorder-1) )
         BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
-        Bz = Bz + 2*BzP(:,l)';
+        Bz = Bz + 2*BzP(:,l).';   % note: .' needed so that it doesn't apply conjugate tranpose
     else
         BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
-        Bz = Bz + BzP(:,l)';
+        Bz = Bz + BzP(:,l).'; % note: .' needed so that it doesn't apply conjugate tranpose
     end
 end
 %keyboard
 
 % normalize by true polygon area:
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
-
-%this is a total fudge - I have no idea where this came from, but imag(Bz_) = -imag(Bz)
-Bz = Bz + 2*(real(Bz) - Bz);  % multiply imag(Bz_) by -1
 
 Bz = Bz/area;
 
