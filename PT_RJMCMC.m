@@ -106,33 +106,33 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         RandStream.setGlobalStream(loadState.Stream)
     end
     
-    AR = cell(nTemps,1);
+    AR = cell(nChains,1);
     AR(:) = {cell(fix(N/ARwindow),1)};%Acceptance ratios
     DummyAR.uAR = 0; DummyAR.bAR = 0; DummyAR.dAR = 0; DummyAR.mAR = 0; 
     DummyAR.TotalAR = 0;
     DummyAR.evalCount = 0;
     DummyAR.swapRate = 0;
     
-    samples = cell(nTemps,1);
+    samples = cell(nChains,1);
     samples(:) = {cell(N,1)};
     
-    kTracker = cell(nTemps,1);
+    kTracker = cell(nChains,1);
     kTracker(:) = {zeros(N,1)};
     
-    en = zeros(N,2,nTemps);% Chi^2 and RMS errors
+    en = zeros(N,2,nChains);% Chi^2 and RMS errors
     
-    swapCount = cell(nTemps,1);
+    swapCount = cell(nChains,1);
     swapCount(:) = {zeros(N,1)};
     
-    Dist  = cell(nTemps,1);
+    Dist  = cell(nChains,1);
     Dist(:) = {zeros(N,1)};
     
     count = 0; 
-    S = cell(nTemps,1);
+    S = cell(nChains,1);
     S(:) = {S_0};
     
     %initialize stuff and start point
-    for ii=1:nTemps
+    for ii=1:nChains
         %status file for each chain
         fid(ii) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(ii),'_status'], 'w');
         fclose (fid(ii));
@@ -182,7 +182,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            aveIterRate     = tLength/count;
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
-           fprintf('-log( likelihood) : %f\n',oldMisfit{ii}(2))
+           fprintf('RMS: %f\n',oldMisfit{ii}(2))
            if( S{ii}.DataType == 3 )
               fprintf('HM RMS, LM RMS: %f %f\n',oldMisfit{ii}(end-1),oldMisfit{ii}(end))
            end
@@ -216,9 +216,9 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         if rand<pSwap
             
             %then swap ALL chains
-            [p,q] = determinPerm(nTemps);  
-            for iTemp = 1: nTemps
-              %twoInts = randperm(nTemps,2);
+            [p,q] = determinPerm(nChains);  
+            for iTemp = 1: nChains
+              %twoInts = randperm(nChains,2);
               first = p(iTemp); second = q(iTemp);
 
                %now find swap probability according to likelihoods
@@ -251,7 +251,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         
         %start parallel tempering
         %one step 
-        for jj=1:nTemps
+        for jj=1:nChains
             
             if count==1;
                 fid(jj) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(jj),'_status'], 'a');
@@ -282,7 +282,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         
         %see if time to save
         if mod(count,saveWindow)==0
-           for ll = 1:nTemps
+           for ll = 1:nChains
             loadState.x{ll} = x{ll};   
             loadState.Stream = RandStream.getGlobalStream;   
             s_ll = samples{ll}; k_ll = kTracker{ll}; en_ll = en(:,:,ll); D_ll = Dist{ll}; AR_ll = AR{ll}; S_ll=S{ll}; 
