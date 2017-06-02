@@ -447,22 +447,6 @@ if (strcmp(isotropic,'isotropic'))
 end
 
 
-%estimate DOI ( x in [0,1] )
-DOI = 1 - (confidH_New(:,2) - confidH_New(:,1))/(S.rhMax-S.rhMin);
-figure(101)
-plot(DOI,binnedZ,'LineWidth',2)
-hhh = gca;
-hhh.YDir = 'reverse';
-hold on
-plot(xlim,RegSol.DOI(1)*ones(1,2),':k','LineWidth',2)
-plot(xlim,RegSol.DOI(2)*ones(1,2),'--k','LineWidth',2)
-ylabel('Depth (m)')
-xlabel('log_{10}( rho )  (Ohm-m)')
-title('Model resolution vs depth')
-legend('model resolution','upper DOI estimate','lower DOI estimate','Location','NorthWest')
-
-
-
 
 %
 % Plot the gridded results:
@@ -608,6 +592,34 @@ xlim([0,S.kMax])
 set(gca, 'fontsize',11)
 ylabel ('Probability of interfaces','fontsize',11)
 %set(gcf, 'Units','inches', 'Position',[0 0 3.3 2])
+
+
+%estimate DOI ( x in [0,1] )
+%DOI = 1 - (confidH_New(:,2) - confidH_New(:,1))/(S.rhMax-S.rhMin);
+dat = ([pdf_matrixV,pdf_matrixV(:,end);pdf_matrixV(end,:),pdf_matrixV(end,end)]);
+DOI = zeros(size(dat,1),1);
+perfectRes = 0*DOI;
+perfectRes(1) = 1;
+for j=1:size(dat,1)
+   DOI(j) = sum(( dat(j,:) - mean(dat(j,:)) ).^2);
+   PR = sum(( perfectRes - mean(dat(j,:)) ).^2);
+   DOI(j) = DOI(j)/PR;
+end
+DOI = DOI(1:end-1);
+%DOI = DOI/(max(DOI));
+figure(101)
+plot(100*DOI,binnedZ,'LineWidth',2)
+hhh = gca;
+hhh.YDir = 'reverse';
+hold on
+plot(xlim,RegSol.DOI(1)*ones(1,2),':k','LineWidth',2)
+plot(xlim,RegSol.DOI(2)*ones(1,2),'--k','LineWidth',2)
+ylabel('Depth (m)')
+xlabel('Model resolution (per cent of perfect resolution)')
+title('Model resolution vs depth')
+legend('model resolution','upper DOI estimate','lower DOI estimate','Location','NorthWest')
+
+
 keyboard
 end
 
