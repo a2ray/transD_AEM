@@ -6,11 +6,14 @@
 % SkyTEM data and writes out a data file prior to PT_RJMCMC inversion.
 %
 
+clear all
+clc
+
 %
 % Model setup:
 %
-z   = [-1d5  0      50    100  150  ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
-sig = [1d-12  1/1000 1/100 1/10 1/1000 ];   % (S/m), layer conductvities. First is air (1d-12).
+z   = [-1d5  0  300  350 ];   % m, vertical position of layer top boundaries, 1st one ignored since it's the top of air.
+sig = [1d-12  1/5000 1/10 1/10 1/500 ];   % (S/m), layer conductvities. First is air (1d-12).
 
 %
 % SkyTEM system setup:
@@ -27,15 +30,15 @@ rRx = 12;    % m, receiver coil distance from center of loop. For SkyTEM this sh
 %
 noiseToAdd = 0.05;  % relative noise to add to model response when creating synthetic noisy data (0.05 = 5% relative noise).
 kMin = 1;           % Minimum number of additional layer interfaces to add
-kMax = 20;          % Maximum number of additional layer interfaces to add
+kMax = 35;          % Maximum number of additional layer interfaces to add
 nFixedLayers = 1;   % Number of fixed layers in z. 1 means only top layer is fixed, which is the air layer in z,sig above.
-minThickness = 2;   % Inversion layers will be fixed to be within these thickness bounds.
-maxThickness = 500;   
+minThickness = 0;   % Inversion layers will be fixed to be within these thickness bounds.
+maxThickness = 600;   
 log10rho_min = -1;  % min log10(resistivity). You shouldn't need to change these.
 log10rho_max = 5;   % max log10(resistivity). You shouldn't need to change these.
 
-numIterations = 50000;  % 100,000 Number of RJ-MCMC iterations to carry out (should be at least 100,000)
-saveEvery     = 1000;   % 10,000 RJ-MCMC models from each parallel tempering chain are save every N iterations (should be at least 10000)
+numIterations = 4e5;  % 100,000 Number of RJ-MCMC iterations to carry out (should be at least 100,000)
+saveEvery     = 1e4;   % 10,000 RJ-MCMC models from each parallel tempering chain are save every N iterations (should be at least 10000)
 
 
 ReferenceModel.z   = z;     % Reference model used in plotting code. Store the "truth" here, or the LCI inversion model if you want to overlay it on the Bayesian result
@@ -46,7 +49,7 @@ ReferenceModel.rho = 1./sig;
 %
 DataFile = 'Test_SynthData.mat'; 
 
-outputFolder = 'Test_SynthData';  % Name of folder to store PT_RJMCMC results
+outputFolder = 'SynthTrash';  % Name of folder to store PT_RJMCMC results
 
 
 %--------------------------------------------------------------------------
@@ -55,9 +58,9 @@ outputFolder = 'Test_SynthData';  % Name of folder to store PT_RJMCMC results
 %
 % Some numerial parameters used by the forward code (don't change these):
 %
-nFreqsPerDecade = 15;
-HankelFilterName = 'kk201Hankel.txt';
-CosSinFilterName = 'kk201CosSin.txt';
+nFreqsPerDecade = 10;
+HankelFilterName = 'kk101Hankel.txt';
+CosSinFilterName = 'kk101CosSin.txt';
 mu = ones(size(sig)); % relative magnetic permeability of each layer. Set this to 1 always!
 
 
@@ -69,7 +72,7 @@ mu = ones(size(sig)); % relative magnetic permeability of each layer. Set this t
 
 rampTime = [0 1; 5d-6 0.5;  10d-6 0]; 
 tic
-Bz = get_LoopFields_TD_FHT(times,rTx,zTx,rRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime);    
+Bz = get_LoopFields_TD_FHT_Synth(times,rTx,zTx,rRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,rampTime);    
 toc                      
 % For comparison, make another model with no conductive layers:                     
 sig_resistor = [1d-12  1/1000 1/1000 1/1000 1/1000];      

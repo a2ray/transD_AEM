@@ -25,7 +25,7 @@ for iFile = 1:nFiles
     if iFile == nFiles
         plot(en_ll(:,2),'-k','linewidth',2)
     end    
-    title('RMS misfit per chain')
+    title('-Log( likelihood ) per chain')
     hold all
     s2 = subplot(7,1,2);
     plot(k_ll)

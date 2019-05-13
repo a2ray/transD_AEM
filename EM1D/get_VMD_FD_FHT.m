@@ -1,18 +1,15 @@
-
-function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
+function Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
 %
-% Computes the vertical magnetic field frequency-domain response for a
-% large loop source. 
+% Computes the frequency domain Bz(r) from a vertical magnetic dipole
+% source using the FHT method.
 %
 % Usage:
-%
-% Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
-%
-%
+% 
+% Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
+% 
 % Inputs:
 %
 % freqs      - frequency(ies) [Hz]. Can be array of values or single value.
-% rTxLoop    - radius of transmitter loop. [m]. single value
 % zTx        - vertical position of transmitter loop (positive down). [m]
 % rRx        - horizontal range(s) to the receiver(s). [m]. Can be array of values or single value.
 % zRx        - vertical position of receiver(s) (positive down). [m]. Can be array of values or single value.
@@ -30,13 +27,18 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
 % 
 % Output:
 %
-% Bz         -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
+% Bz -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
 %
 %
 % Written by:
 %
 % Kerry Key
 % Scripps Institution of Oceanography
+%
+% History:
+%
+% January 2017  - updated for compatibility with other 1D kernels
+% May 2011      - implemented
 %
 %
 %--------------------------------------------------------------------------
@@ -56,7 +58,6 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
 % 
 
     FJ0 = repmat(Filter.J0,1,length(freqs));
-    FJ1 = repmat(Filter.J1,1,length(freqs));
 
     %
     % Loop over receivers
@@ -64,50 +65,26 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
     for iRx = 1:length(rRx)
 
         rRxEval = rRx(iRx);
-        zRxEval = zRx(iRx);
-        
+
         % FHT:
-        if rRxEval < rTxLoop
-            
-            lTxClose    = true;
-            lambda      = Filter.base/rTxLoop;    
-            BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);     
-            Bz(iRx,:)   = sum(BzK.*FJ1,1)/rTxLoop;   
-            
-        else
-            lTxClose    = false;  
-            
-            % non-spline:
-             lambda      = Filter.base/rRxEval; 
-             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);             
-            % spline: % Testing only, could result in dicey responses...
-%             lambdaSp = 10.^[min(log10(lambda))-.5:1/8:max(log10(lambda))+.5]'; 
-%             BzK    = getBzKernel(freqs,z,sig,mu,lambdaSp,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);
-%             PP = spline(log10(lambdaSp),BzK.'); 
-%             BzK  = ppval(PP,log10(lambda)).'; 
-            Bz(iRx,:)   = sum(BzK.*FJ0,1)/rRxEval;  
-            
-        end
-
-
-        % Normalize by dipole moment, apply pre-coefficients too          
-        Bz(iRx,:)  =  rTxLoop*mu(1)*mu0*Bz(iRx,:)/ (pi*rTxLoop^2);      
-
-
-    end % loop over receivers
+        lambda      = Filter.base/rRxEval; 
+        BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx);             
+        Bz(iRx,:)   = mu0/(2*pi)*sum(BzK.*FJ0,1)/rRxEval;  
         
- 
+    end % loop over receivers
+           
 %
 %  All done, goodbye!
 %
     return;
+   
+
 end
- 
-%- 
+
 %--------------------------------------------------------------------------
-function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop) 
+function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx) 
     
-    epsilon = 8.8541878176d-12;
+    epsilon     = 8.8541878176d-12;
         
     dz        = diff(z);
     nz        = length(z);
@@ -230,21 +207,11 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
         Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
     end
 
-    BzKernel   = squeeze(Fz.*LAM(1,:,:).^2);
+    BzKernel   = squeeze(Fz.*LAM(1,:,:).^3);
     
     if size(BzKernel,1) == 1
         BzKernel = BzKernel.';
     end
-    if lTxClose
-        bess = besselj(0,lambda*rRxEval);
-        Bz   =  BzKernel.*repmat( bess,1,length(freqs));
-    else
-        bess = besselj(1,lambda*rTxLoop);
-        Bz   =  BzKernel.*repmat(bess,1,length(freqs));
-    end         
  
     
 end % 
-
-
- 

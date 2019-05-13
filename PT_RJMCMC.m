@@ -11,34 +11,66 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
 %     %number of iterations
 %     N = 500000;  %keep it to 500e3
     N = S_0.numIterations;
+    
+    %decide if you want to use low-mode data (1), high-mode data (2), or both (3)
+    S_0.DataType = 2; 
  
     %Acceptance ratios in MCMC chains calculated every so many steps
-    ARwindow = 500;
+    ARwindow = 50;
     
     %save every so many steps
 %     saveWindow = 10000; %keep it to 1e4
     saveWindow = S_0.saveEvery;
     
-    nDisplayEvery = 100;  % print message to screen
+    nDisplayEvery = 50;  % print message to screen
     
     %number of parallel chains (and temperatures)
-    nTemps = 12;
+    nChains = 8;
+    nChainsAtOne = 3;
+    nTemps = nChains - (nChainsAtOne-1);
+    %nTemps = 4; 
+    %nTemps = 1;
+    
+    Tmax = 2.0;
     
     %inverse temperature B ladder
-    B = logspace(-log10(2.5),0,nTemps);
+    %B = logspace(-log10(2.5),0,nTemps);
+    %B = logspace(-log10(1.5),0,nTemps);
+    a = logspace(-log10(Tmax),0,nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    B = [ a b ];
     
     %probability of swapping every count of the MCMC chain
     pSwap = 1;
+    %pSwap = 0;
     
     %step sizes in model space in log10 resistivity, decreasing temperature
     %for update
-    UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
+    %UstepSize = [0.02 0.01 0.007 0.007 0.01 0.008 0.007 0.007 0.006 0.006 0.006 0.006];
+    a = linspace(0.025, 0.01, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    UstepSize = [ a b ];  %for nTemps = 6
+    %UstepSize = linspace(0.02, 0.01, nTemps);    %for nTemps = 4
+    %UstepSize = [ 0.006 ];
     %for birth / death
-    BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
+    %BstepSize = [0.6  0.55   0.4   0.4 0.5  0.5   0.4   0.4   0.4   0.4   0.4   0.4];
+    a = linspace(0.65, 0.4, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    BstepSize = [ a b ];     %for nTemps = 6
+    %BstepSize = linspace(0.6, 0.4, nTemps);      %for nTemps = 4
+    a = linspace(1.5,0.4,nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    HstepSize = [ a b ];        %for the hFactor parameter
+    %BstepSize = [ 0.4 ];
     
     %step sizes in model space depth in m, decreasing temperature
     %for move interface
-    MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
+    %MstepSize = [25   12    12    10  15   12    12    10    10    8     8     7];
+    a = linspace(11, 7, nTemps);
+    b = a(end)*ones(1,nChainsAtOne-1);
+    MstepSize = [ a b ];        %for nTemps = 6
+    %MstepSize = linspace(10, 7, nTemps);         %for nTemps = 4
+    %MstepSize = [ 7 ];
     
  
     % Other parameters for the RJMCMC algorithm:
@@ -56,11 +88,11 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
     
     %*** Shouldn't need to modify below this ***
     
-    if length(UstepSize) ~= nTemps || ...
-        length(BstepSize) ~= nTemps || ...
-        length(MstepSize) ~= nTemps
+    if length(UstepSize) ~= nChains || ...
+        length(BstepSize) ~= nChains || ...
+        length(MstepSize) ~= nChains
         beep
-        disp('less steps sizes than nTemps')
+        disp('less steps sizes than nChains')
         return
     end
     
@@ -74,33 +106,33 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         RandStream.setGlobalStream(loadState.Stream)
     end
     
-    AR = cell(nTemps,1);
+    AR = cell(nChains,1);
     AR(:) = {cell(fix(N/ARwindow),1)};%Acceptance ratios
     DummyAR.uAR = 0; DummyAR.bAR = 0; DummyAR.dAR = 0; DummyAR.mAR = 0; 
     DummyAR.TotalAR = 0;
     DummyAR.evalCount = 0;
     DummyAR.swapRate = 0;
     
-    samples = cell(nTemps,1);
+    samples = cell(nChains,1);
     samples(:) = {cell(N,1)};
     
-    kTracker = cell(nTemps,1);
+    kTracker = cell(nChains,1);
     kTracker(:) = {zeros(N,1)};
     
-    en = zeros(N,2,nTemps);% Chi^2 and RMS errors
+    en = zeros(N,2,nChains);% Chi^2 and RMS errors
     
-    swapCount = cell(nTemps,1);
+    swapCount = cell(nChains,1);
     swapCount(:) = {zeros(N,1)};
     
-    Dist  = cell(nTemps,1);
+    Dist  = cell(nChains,1);
     Dist(:) = {zeros(N,1)};
     
     count = 0; 
-    S = cell(nTemps,1);
+    S = cell(nChains,1);
     S(:) = {S_0};
     
     %initialize stuff and start point
-    for ii=1:nTemps
+    for ii=1:nChains
         %status file for each chain
         fid(ii) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(ii),'_status'], 'w');
         fclose (fid(ii));
@@ -111,6 +143,9 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         ConvStat{ii}.evalCount = 0;
 %         x{ii} = true_model;
 %         k{ii} = length(x{ii}.z);
+        for jjj=1:5
+            rand;
+        end
         if nargin~=3
             k{ii} = 1;
             x{ii}.z = S_0.zMin + (S_0.zMax-S_0.zMin)*rand;
@@ -119,17 +154,20 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
                 x{ii}.rhoh = x{ii}.rhov;
             else
                 x{ii}.rhoh = S_0.rhMin + (S_0.rhMax-S_0.rhMin)*rand(1,k{ii}+1);
-            end    
+            end  
+            x{ii}.hFactor = 0;
         else
             loadedMod = loadState.x{ii};
             k{ii} = length(loadedMod.z);
             x{ii} = loadedMod;
+            x{ii}.hFactor = 0;
         end    
             
         oldMisfit{ii} = getMisfit(x{ii},S_0);
         S{ii}.rSD1 = UstepSize(ii);
         S{ii}.rSD2 = BstepSize(ii);
         S{ii}.MoveSd = MstepSize(ii);
+        S{ii}.hFactorSD = HstepSize(ii);
     end
     
     %start MCMC
@@ -144,15 +182,43 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
            aveIterRate     = tLength/count;
            predictedEnd = (N-count)*aveIterRate/86400 + now;
            fprintf('Iteration %i out of %i. Mean time per iteration: %4.2f s. Predicted completion time: %s\n',count,N,aveIterRate,datestr(predictedEnd))
+           fprintf('RMS: %f\n',oldMisfit{ii}(2))
+           if( S{ii}.DataType == 3 )
+              fprintf('HM RMS, LM RMS: %f %f\n',oldMisfit{ii}(end-1),oldMisfit{ii}(end))
+           end
+           
+%             tmpMisfit = getMisfit(x{end},S{end});
+%             Bz = tmpMisfit(3:end);
+%             BzHM = Bz;
+%             BzLM = Bz%(20:end);
+%             eHM = S{end}.HighMode.data+S{end}.HighMode.sd;
+%             eHM = [ eHM ; S{end}.HighMode.data-S{end}.HighMode.sd];
+%             eLM = S{end}.LowMode.data+S{end}.LowMode.sd;
+%             eLM = [ eLM ; S{end}.LowMode.data-S{end}.LowMode.sd];
+%             clf
+%             figure
+%             loglog(S{end}.HighMode.times,S{end}.HighMode.data,'ro')
+%             hold on
+%             loglog(S{end}.LowMode.times,S{end}.LowMode.data,'bo')
+%             loglog([S{end}.HighMode.times;S{end}.HighMode.times],eHM,'-','LineWidth',2)
+%             loglog([S{end}.LowMode.times;S{end}.LowMode.times],eLM,'-','LineWidth',2)
+%             loglog(S{end}.HighMode.times,abs(BzHM),'*')
+%             loglog(S{end}.LowMode.times,abs(BzLM),'*')
+%             %residHM = (abs(S{end}.HighMode.data)-abs(Bz(1:19)))./S{end}.HighMode.sd;
+%             residLM = (abs(S{end}.LowMode.data)-abs(BzLM))./S{end}.LowMode.sd;
+%             %rms_residHM = sqrt(residHM*residHM'/length(residHM))
+%             rms_residLM = sqrt(residLM*residLM'/length(residLM))
+           
+%            keyboard
            
         end
         %see if swap
         if rand<pSwap
             
             %then swap ALL chains
-            [p,q] = determinPerm(nTemps);  
-            for iTemp = 1: nTemps
-              %twoInts = randperm(nTemps,2);
+            [p,q] = determinPerm(nChains);  
+            for iTemp = 1: nChains
+              %twoInts = randperm(nChains,2);
               first = p(iTemp); second = q(iTemp);
 
                %now find swap probability according to likelihoods
@@ -185,7 +251,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         
         %start parallel tempering
         %one step 
-        for jj=1:nTemps
+        for jj=1:nChains
             
             if count==1;
                 fid(jj) = fopen([outputFolder,'/',FileRoot,'_PT_RJMCMC','_',num2str(jj),'_status'], 'a');
@@ -196,7 +262,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
             Dist{jj}(count) = Dist{jj}(count) + dTrav;
             samples{jj}{count} = x{jj};
             kTracker{jj}(count)= k{jj};
-            en(count,:,jj)      = oldMisfit{jj};
+            en(count,:,jj)      = oldMisfit{jj}(1:2);
             
             if mod(count,ARwindow) == 0
                  idx = count/ARwindow;
@@ -216,7 +282,7 @@ function PT_RJMCMC(DataFile,outputFolder,loadState)
         
         %see if time to save
         if mod(count,saveWindow)==0
-           for ll = 1:nTemps
+           for ll = 1:nChains
             loadState.x{ll} = x{ll};   
             loadState.Stream = RandStream.getGlobalStream;   
             s_ll = samples{ll}; k_ll = kTracker{ll}; en_ll = en(:,:,ll); D_ll = Dist{ll}; AR_ll = AR{ll}; S_ll=S{ll}; 
@@ -491,7 +557,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
             ConvStat.uc=ConvStat.uc+1;
             [xNew,priorViolate]=rhoUpdate(k,x,S,'large');%always large in PT
                 if ~priorViolate
+                    %tic
                     newMisfit = getMisfit(xNew,S);
+                    %toc
                     ConvStat.evalCount = ConvStat.evalCount +1;
                     logalpha = -(newMisfit(1) - oldMisfit(1))*B;
                 else
@@ -525,7 +593,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     end    
                     %calculate acceptance probability
                     if (~priorViolate)
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount+1;
                         %just priorR times propR
                         logalpha  = 2*log(S.rSD2)+log(2*pi)-2*log(del)+(pertNorm/2);
@@ -553,7 +623,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     if (~priorViolate)
                         [pertNorm,xNew] = death (x,k,S);
                         %compute acceptance
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount +1;
                         %just priorR times propR
                         logalpha = -2*log(S.rSD2)-log(2*pi)+2*log(del)-(pertNorm/2);
@@ -577,7 +649,9 @@ function [x,k,oldMisfit,ConvStat,Dist] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,
                     ConvStat.mc=ConvStat.mc+1;
                     [xNew,priorViolate] = move (x,k,S);
                     if ~priorViolate
+                        %tic
                         newMisfit = getMisfit(xNew,S);
+                        %toc
                         ConvStat.evalCount = ConvStat.evalCount +1;
                         logalpha = -(newMisfit(1) - oldMisfit(1))*B;
                     else

@@ -1,21 +1,20 @@
-
-function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
+function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
 %
-% Computes the vertical magnetic field frequency-domain response for a
-% large loop source. 
+% Computes the frequency domain Bz(r) from a horiontal electric dipole
 %
 % Usage:
-%
-% Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
-%
-%
+% 
+% Bz = get_Edipole_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
+% 
 % Inputs:
 %
 % freqs      - frequency(ies) [Hz]. Can be array of values or single value.
-% rTxLoop    - radius of transmitter loop. [m]. single value
 % zTx        - vertical position of transmitter loop (positive down). [m]
 % rRx        - horizontal range(s) to the receiver(s). [m]. Can be array of values or single value.
 % zRx        - vertical position of receiver(s) (positive down). [m]. Can be array of values or single value.
+% theta      - angle between HED and receiver. Positive clockwise. [degrees] 
+%              Can be array of values or single value, must b esame size as
+%              rRx and zRx.
 % sig        - array of conductivities for each layer. [S/m]
 % mu         - array of relative magnetic permeabilities for each layer.
 %              Normally this is just an array of ones.
@@ -30,7 +29,7 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
 % 
 % Output:
 %
-% Bz         -  vertical magnetic field (T/Am^2). Dimensions: (length(freqs),length(rRx))
+% Bz -  vertical magnetic field (T/Am). Dimensions: (length(freqs),length(rRx))
 %
 %
 % Written by:
@@ -38,6 +37,13 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
 % Kerry Key
 % Scripps Institution of Oceanography
 %
+% History:
+%
+% January 2017  - created for fast Bz calculation for wire loop source. An
+% outer wrapper will do the line integral around the loop segments. This
+% may be faster than doing an area integral over the polygon using Bz from
+% a point magnetic dipole. Also could be more accurate since it may be
+% cheaper to do higher order quadrature along segments than triangles?
 %
 %--------------------------------------------------------------------------
 
@@ -48,69 +54,44 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
 %
     A = load(filterName);
     Filter.base = A(:,1);
-    Filter.J0   = A(:,2);
     Filter.J1   = A(:,3);
   
 %
 % Now compute the CSEM responses using the FHT method:
 % 
 
-    FJ0 = repmat(Filter.J0,1,length(freqs));
     FJ1 = repmat(Filter.J1,1,length(freqs));
 
     %
     % Loop over receivers
     %
+    Bz = zeros(length(rRx),length(freqs));
     for iRx = 1:length(rRx)
 
-        rRxEval = rRx(iRx);
-        zRxEval = zRx(iRx);
-        
         % FHT:
-        if rRxEval < rTxLoop
-            
-            lTxClose    = true;
-            lambda      = Filter.base/rTxLoop;    
-            BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);     
-            Bz(iRx,:)   = sum(BzK.*FJ1,1)/rTxLoop;   
-            
-        else
-            lTxClose    = false;  
-            
-            % non-spline:
-             lambda      = Filter.base/rRxEval; 
-             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);             
-            % spline: % Testing only, could result in dicey responses...
-%             lambdaSp = 10.^[min(log10(lambda))-.5:1/8:max(log10(lambda))+.5]'; 
-%             BzK    = getBzKernel(freqs,z,sig,mu,lambdaSp,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);
-%             PP = spline(log10(lambdaSp),BzK.'); 
-%             BzK  = ppval(PP,log10(lambda)).'; 
-            Bz(iRx,:)   = sum(BzK.*FJ0,1)/rRxEval;  
-            
-        end
-
-
-        % Normalize by dipole moment, apply pre-coefficients too          
-        Bz(iRx,:)  =  rTxLoop*mu(1)*mu0*Bz(iRx,:)/ (pi*rTxLoop^2);      
-
-
-    end % loop over receivers
+        lambda      = Filter.base/rRx(iRx);
+        BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx(iRx));             
+        Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx); 
         
- 
+    end % loop over receivers
+           
 %
 %  All done, goodbye!
 %
     return;
+   
+
 end
- 
-%- 
+
 %--------------------------------------------------------------------------
-function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop) 
-    
-    epsilon = 8.8541878176d-12;
+function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx) 
+%
+% Computes Bz kernel for a horizontal electric dipole (HED)
+% This is nearly idential to the kernel routine for Bz for a VMD
+
+    epsilon   = 8.8541878176d-12;
         
     dz        = diff(z);
-    nz        = length(z);
     hh        = [1d60 dz(2:end) 1d60];
     
     iTxlayer = find(z < zTx,1,'last');
@@ -135,12 +116,12 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     a     = complex(zeros(length(z),length(lambda),length(freqs)));
     b     = complex(zeros(length(z),length(lambda),length(freqs)));
  
-    
+
     [LAM,SIG,FREQ] = meshgrid(lambda,sig,freqs);
     [~,MU,~]  = meshgrid(lambda,mu,freqs);
     [~,HH,~]  = meshgrid(lambda,hh,freqs);     
     
- 
+
     gamma = sqrt(LAM.^2 - 1i*2*pi*FREQ*mu0.*MU.*(SIG - 1i*2*pi*FREQ*epsilon));
     
     %
@@ -151,9 +132,11 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     %
     % Compute r+ and r- layer coefficients:
     %
-    rp = ( MU(2:end,:,:).*gamma(1:end-1,:,:) - gamma(2:end,:,:).*MU(1:end-1,:,:) ) ./ ...
-         ( MU(2:end,:,:).*gamma(1:end-1,:,:) + gamma(2:end,:,:).*MU(1:end-1,:,:) );
-    rm = complex(zeros(size(rp,1)+1,size(rp,2),size(rp,3)));
+    mu2g1 = MU(2:end,:,:).*gamma(1:end-1,:,:);
+    g2mu1 = gamma(2:end,:,:).*MU(1:end-1,:,:); 
+    rp    = ( mu2g1 - g2mu1 ) ./ ...
+            ( mu2g1 + g2mu1 );
+    rm    = complex(zeros(size(rp,1)+1,size(rp,2),size(rp,3)));
     
     rm(2:length(sig),:,:) = -rp;
     
@@ -162,8 +145,9 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     %        
     for i = length(sig)-1:-1:iTxlayer
         Rp(i+1,:,:) = Rp(i+1,:,:).*expgh(i+1,:,:);  % post applied to avoid positive exp in a,b formulation 
-        Rp(i,:,:)   = ( rp(i,:,:) +        Rp(i+1,:,:).*expgh(i+1,:,:)) ./ ...
-                      ( 1     + rp(i,:,:).*Rp(i+1,:,:).*expgh(i+1,:,:));
+        Rpexpgh     =  Rp(i+1,:,:).*expgh(i+1,:,:);
+        Rp(i,:,:)   = ( rp(i,:,:) +            Rpexpgh) ./ ...
+                      ( 1         + rp(i,:,:).*Rpexpgh);
     end
 
     %
@@ -171,8 +155,9 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
     %
     for i = 2:iTxlayer
         Rm(i-1,:,:) = Rm(i-1,:,:).*expgh(i-1,:,:);  % post applied to avoid positive exp in a,b formulation 
-        Rm(i,:,:)   = ( rm(i,:,:) +       Rm(i-1,:,:).*expgh(i-1,:,:)) ./ ...
-                      ( 1    + rm(i,:,:).*Rm(i-1,:,:).*expgh(i-1,:,:));
+        Rmexpgh     = Rm(i-1,:,:).*expgh(i-1,:,:);
+        Rm(i,:,:)   = ( rm(i,:,:) +            Rmexpgh) ./ ...
+                      ( 1         + rm(i,:,:).*Rmexpgh);
     end
 
     %
@@ -230,21 +215,10 @@ function Bz = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTx
         Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
     end
 
-    BzKernel   = squeeze(Fz.*LAM(1,:,:).^2);
+    BzKernel   = mu(iRxlayer)*mu0*squeeze(Fz.*LAM(1,:,:).^2);
     
     if size(BzKernel,1) == 1
         BzKernel = BzKernel.';
     end
-    if lTxClose
-        bess = besselj(0,lambda*rRxEval);
-        Bz   =  BzKernel.*repmat( bess,1,length(freqs));
-    else
-        bess = besselj(1,lambda*rTxLoop);
-        Bz   =  BzKernel.*repmat(bess,1,length(freqs));
-    end         
  
-    
 end % 
-
-
- 
