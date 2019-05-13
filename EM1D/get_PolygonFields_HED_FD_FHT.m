@@ -1,5 +1,10 @@
-function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,filterName,GQorder)
+function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,filterName,GQorder,nSplinePointsPerDecade)
 
+%
+% Assumes single values for: zTx,xyRx,zRx
+%
+% x,y,z is right-handed with z positive down, so visualize as x=up, y=right, z=down
+%
 % Calculates the frequency domain magnetic field of a polygon
 % shaped loop of wire in the horizontal plane. 
 % It does so by carrying out a line integral of the
@@ -7,29 +12,41 @@ function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,
 % along the wire segments. The integration is performed using Gauss
 % quadarature. Use get_HED_FD_FHT to compute Bz field from a point HED 
 %
+ 
 
 bPlot = false; % set to true to plot polygon and quadrature points
+
  
 % Get quadrature weights:
 [xq,wq] = GLegIntP(GQorder);
-            
-%number of polygon vertices 
-nvertices = size(xyPolyTx,1);
-
-%number of frequencies
-nf = length(freqs);
-
-%initialize the value of the integral to zero
-Bz = zeros(1,nf);
+ 
+% Initialize the value of the integral to zero
+Bz = zeros(1,length(freqs));
  
 if bPlot
    figure; 
 end
-l = 1; %counter for the number of Gauss quadrature points
-wquad_ = [ ]; % holder for GQ weights
-%loop over the number of segments:
-for k=1:5%nvertices %change this back to nvertices if using anything other than the SkyTEM octagon!!
-    
+
+%
+% KWK May 2019: noting that Bz at range R has sin(theta) symmetry, 
+% efficient calculations are possible by first computing all quadrature
+% points, computing Bz at theta = 90 (so sin(90) = 1), interpolating in R
+% using splines, then applying the sin(theta) scaling. The old code did
+% this but was hard wired for the SkyTEM Tx geometry, so we generalize this
+% in the new code so that it works for any Tx geometry.
+% 
+
+% Loop over the number of Tx loop segments and collect quadrature points
+% and weights in r and theta:
+
+nvertices = size(xyPolyTx,1);
+nq        = length(xq);
+wquad     = zeros(nq*nvertices,1);
+rquad     = zeros(nq*nvertices,1);
+thetaquad = zeros(nq*nvertices,1);
+
+for k=1:nvertices 
+        
     % get the segments:  
     if (k == nvertices)
         v = [ xyPolyTx(k,:) ; xyPolyTx(1,:)  ];
@@ -37,100 +54,73 @@ for k=1:5%nvertices %change this back to nvertices if using anything other than 
         v = [ xyPolyTx(k,:) ; xyPolyTx(k+1,:) ];
     end
    
-    % Get length of wire segment and its midoint:
-    
+    % Get length of wire segment and its midpoint:
     dv   = diff(v);
     dx   = dv(1);
     dy   = dv(2);
     lenv = norm(dv);
-    
     midpoint = sum(v,1)/2;
+    
+    wquad((k-1)*nq + (1:nq))     = wq*lenv/2;
+    
     
     % change quadarature interval from -1 to +1 to a to b. At the same
     % time, break out x and y location of quadrature points along the wire
     % segment:
     xquad = xq*dx/2 + midpoint(1);
     yquad = xq*dy/2 + midpoint(2);
-    wquad = wq*lenv/2;  
-    wquad_ = [ wquad_ ; wquad ];
     
+    % Get angle theta between wire segment quad points and receiver azimuth: 
+    dxRx = xyRx(1) - xquad;
+    dyRx = xyRx(2) - yquad;
+    
+    rquad((k-1)*nq + (1:nq)) = sqrt(dxRx.^2+dyRx.^2); % distance from each quad point to Rx
+    
+    dxdp = v(2,1) - xquad;
+    dydp = v(2,2) - yquad;    
+
+    drxq = [dxRx dyRx];
+    dv2q = [dxdp dydp];
+
+    acrossb = (dydp.*dxRx - dxdp.*dyRx);
+    adotb   = dot(dv2q',drxq')';
+    
+   	thetaquad((k-1)*nq + (1:nq)) = atan2d(acrossb,adotb);    % tan(theta) =  a x b / a dot b   % this gets 4 quadarant theta
+ 
+        
     if bPlot
         plot(v([1:end 1],1),v([1:end 1],2),'k-'); hold on
         plot(xquad,yquad,'*')
         plot(midpoint(1),midpoint(2),'ro')
         axis equal
-        
         plot(xyRx(1),xyRx(2),'k*')
     end
-    % Now loop over quadrature points and compute Bz:
-
-    BzQ = 0*Bz;
-
-    for i = 1:length(xquad)
-
-        % Get angle theta between wire segment and receiver azimuth. Since Bz
-        % has cos(theta) dependence, the direction doesn't matter.
-        
-        dxRx = xyRx(1) - xquad(i);
-        dyRx = xyRx(2) - yquad(i);
-        
-        dxdp = v(2,1) - xquad(i);
-        dydp = v(2,2) - yquad(i);
-        
-        drxq = [dxRx dyRx];
-        dv2q = [dxdp dydp];
-      
-        acrossb = (dydp*dxRx - dxdp*dyRx);
-        adotb   = dv2q*drxq';
-        theta   = atan2d( acrossb,adotb);    % tan(theta) =  a x b / a dot b   % this gets 4 quadarant theta
-        theta_(l) = theta;
-        
-        rRx     = norm(drxq);
-        rRx_(l) = rRx; %holds all the ranges for the Gauss quadrature points
-        l = l+ 1;
-        
-        %BzP     = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName);
-        
-        %BzQ     = BzQ + BzP*wquad(i); 
-        
-    end
-    
-%     Bz = Bz + BzQ;  %uncomment this line if using anything but the SKyTEM octagon!!
-    
-%     if( k > 1 && k < 5 )
-%         Bz = Bz + 2*BzQ;
-%     else
-%         Bz = Bz + BzQ;
-%     end
     
 end
 
-nrsplines = 3; %number of spline points to use for the rRx spline interpolation
-% R = linspace(rRx_(1),rRx_(end),nrsplines);
-R = linspace(min(rRx_),max(rRx_),nrsplines);
+% Get spline points to use for ranges:
+nDecadesRange = log10(max(rquad)/min(rquad));
+nSplinePts = ceil(nDecadesRange)*nSplinePointsPerDecade;
+% the above has at least nSplinePointsPerDecade points (for example when far field
+% solution requested)
+rSpline = logspace(log10(min(rquad)),log10(max(rquad)),nSplinePts);
 
-%get the frequency response Bz at each of the spline points, for theta = 90
-for j=1:nrsplines
-    BzSpline(:,j) = get_HED_FD_FHT(freqs,zTx,R(j),zRx,90,sig,mu,z,filterName);
+% Now loop over spine points and compute Bz:
+BzSpline = zeros(length(freqs),nSplinePts);
+for j = 1:length(rSpline)
+    BzSpline(:,j) = get_HED_FD_FHT(freqs,zTx,rSpline(j),zRx,90,sig,mu,z,filterName); % computed at theta=90 since Bz ~ sin(theta)
 end
-%compute the spline interpolation at the rRx values of the GQ points (rRx_)
-for j=1:nf
-    BzP(j,:) = interp1(R,BzSpline(j,:),rRx_,'spline'); 
-end
-%apply theta dependence and Gauss quadrature weights, and sum up
-Bz = 0.0*Bz;
-%keyboard
-for l=1:size(BzP,2)
-    if( l > GQorder && l < size(BzP,2)-(GQorder-1) )
-        BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
-        Bz = Bz + 2*BzP(:,l).';   % note: .' needed so that it doesn't apply conjugate tranpose
-    else
-        BzP(:,l) = BzP(:,l)*sind(theta_(l))*wquad_(l);
-        Bz = Bz + BzP(:,l).'; % note: .' needed so that it doesn't apply conjugate tranpose
-    end
-end
-%keyboard
+ 
+% Now interpolate to rquad points, scale by sin(thetaquad), mulitply by
+% quadrature weight sand sum:
 
+BzS = interp1(rSpline',BzSpline(:,:).',rquad ,'spline'); % note it is fastest to do this for all ranges at once so spline fit coefficents are computed only once
+ 
+for iFreq = 1:length(freqs)
+    Bz(iFreq) = sum(BzS(:,iFreq).*wquad.*sind(thetaquad));
+end
+ 
+ 
 % normalize by true polygon area:
 area = polyarea(xyPolyTx(:,1),xyPolyTx(:,2));
 

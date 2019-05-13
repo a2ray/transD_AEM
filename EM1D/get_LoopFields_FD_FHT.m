@@ -64,13 +64,14 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
     for iRx = 1:length(rRx)
 
         rRxEval = rRx(iRx);
-
+        zRxEval = zRx(iRx);
+        
         % FHT:
         if rRxEval < rTxLoop
             
             lTxClose    = true;
             lambda      = Filter.base/rTxLoop;    
-            BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);     
+            BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);     
             Bz(iRx,:)   = sum(BzK.*FJ1,1)/rTxLoop;   
             
         else
@@ -78,7 +79,7 @@ function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterNam
             
             % non-spline:
              lambda      = Filter.base/rRxEval; 
-             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);             
+             BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRxEval,lTxClose,rRxEval,rTxLoop);             
             % spline: % Testing only, could result in dicey responses...
 %             lambdaSp = 10.^[min(log10(lambda))-.5:1/8:max(log10(lambda))+.5]'; 
 %             BzK    = getBzKernel(freqs,z,sig,mu,lambdaSp,mu0,zTx,zRx,lTxClose,rRxEval,rTxLoop);
