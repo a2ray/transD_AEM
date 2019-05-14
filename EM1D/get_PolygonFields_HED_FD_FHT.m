@@ -12,7 +12,6 @@ function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,
 % along the wire segments. The integration is performed using Gauss
 % quadarature. Use get_HED_FD_FHT to compute Bz field from a point HED 
 %
- 
 
 bPlot = false; % set to true to plot polygon and quadrature points
 
