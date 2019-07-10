@@ -1,5 +1,5 @@
 function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
-                            HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampTime,lowPassFilters)
+                            HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder,rampTime,lowPassFilters,nSplinePointsPerDecade)
  
 %
 % Computes the vertical magnetic field time-domain response for a
@@ -48,6 +48,8 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
 % lowPassFilters   - Array of corner frequencies[Hz] for any low-pass filters
 %                    to apply. e.g. [ 4.500E+05  3.000E+05 ]
 %
+% nSplinePointsPerDecade
+%                  - Has at least nSplinePointsPerDecade points
 %
 %
 % Output:
@@ -85,6 +87,10 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
     if ~exist('rampTime','var')
         rampTime = [];
     end
+    if ~exist('nSplinePointsPerDecade','var')
+        nSplinePointsPerDecade = 10;
+    end
+
     
    % Adust frequency range to cover min/max times plus a little bit more:
     n = 3;
@@ -115,7 +121,7 @@ function dBzdt = get_LoopFields_TD_FHT(times,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,...
   %  BzFD = get_PolygonFields_VMD_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
   
   % Kernel for doing line integral along wire segments of Bz from a HED: 
-    BzFD = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder);
+    BzFD = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,HankelFilterName,LoopQuadOrder,nSplinePointsPerDecade);
     
 
 %

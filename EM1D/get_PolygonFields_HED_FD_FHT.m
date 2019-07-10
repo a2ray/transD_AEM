@@ -12,7 +12,6 @@ function Bz = get_PolygonFields_HED_FD_FHT(freqs,xyPolyTx,zTx,xyRx,zRx,sig,mu,z,
 % along the wire segments. The integration is performed using Gauss
 % quadarature. Use get_HED_FD_FHT to compute Bz field from a point HED 
 %
- 
 
 bPlot = false; % set to true to plot polygon and quadrature points
 
@@ -115,7 +114,12 @@ end
 % quadrature weight sand sum:
 
 BzS = interp1(rSpline',BzSpline(:,:).',rquad ,'spline'); % note it is fastest to do this for all ranges at once so spline fit coefficents are computed only once
- 
+
+% for testing NOT using spline interpolation:
+% for j = 1:length(rquad)
+%     BzS(j,:) = get_HED_FD_FHT(freqs,zTx,rquad(j),zRx,90,sig,mu,z,filterName); % computed at theta=90 since Bz ~ sin(theta)
+% end
+
 for iFreq = 1:length(freqs)
     Bz(iFreq) = sum(BzS(:,iFreq).*wquad.*sind(thetaquad));
 end
