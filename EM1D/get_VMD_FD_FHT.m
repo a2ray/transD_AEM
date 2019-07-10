@@ -42,8 +42,8 @@ function Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
 %
 %
 %--------------------------------------------------------------------------
-
-    mu0 = 4*pi*10^-7;
+    mu0       = 4*pi*10^-7;
+    epsilon   = 8.8541878176d-12;
 
 %
 % Load the digital filter weights:
@@ -71,6 +71,35 @@ function Bz = get_VMD_FD_FHT(freqs,zTx,rRx,zRx,sig,mu,z,filterName)
         BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx);             
         Bz(iRx,:)   = mu0/(2*pi)*sum(BzK.*FJ0,1)/rRxEval;  
         
+        
+        % Add on primary field:
+        
+        iTxlayer = find(z < zTx,1,'last');
+        iRxlayer = find(z < zRx(iRx),1,'last');
+    
+        if iRxlayer == iTxlayer
+            
+            rp = rRx(iRx);
+            zp = zRx(iRx) - zTx;
+
+            R  = sqrt(rp.^2 + zp.^2);
+            mmu  = mu0*mu(iTxlayer);
+            ssig = sig(iTxlayer);
+            w    = 2*pi*freqs;
+            k    = sqrt(-1i*w*mmu.*(ssig - 1i*w*epsilon) );
+
+            fac1 =  mmu/(4*pi*R.^3).*exp(-1i.*k.*R);
+            fac2 = -k.^2.*R.^2 + 3*1i.*k.*R + 3;
+            fac3 =  k.^2.*R.^2 - 1i.*k.*R - 1;           
+      
+       
+            BzP =  fac1.*( zp.^2./R.^2.*fac2 + fac3 );  % W&H eq 2.57
+             
+            Bz(iRx,:) =  Bz(iRx,:) + BzP;
+            
+        end
+          
+         
     end % loop over receivers
            
 %
@@ -203,9 +232,9 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
  
     Fz = a(iRxlayer,:,:).*expp + b(iRxlayer,:,:).*expm;
 
-    if iRxlayer == iTxlayer
-        Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
-    end
+%     if iRxlayer == iTxlayer
+%         Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
+%     end
 
     BzKernel   = squeeze(Fz.*LAM(1,:,:).^3);
     

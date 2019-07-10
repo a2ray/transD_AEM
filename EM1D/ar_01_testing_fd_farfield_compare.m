@@ -11,14 +11,17 @@ freqs = 10.^(log10(freqLowLimit):1/nFreqsPerDecade:log10(freqHighLimit));
 % model
 z   = [-1d5    0   100  ];   
 sig = [1d-12   1/10 1/10 ];
+% sig = [1d-12   1d-12 1d-12 ];
+% sig = [1 1 1 ];
+
 mu = ones(size(sig));
 
 % geometry
 zTx     = -30; 
-zRx     = -31.90;
-xyRx    = [17 0]; 
+zRx     =  50;
+xyRx    = [40 0]; 
 rTx     = 17;
-nangles = 14;
+nangles = 200;
 farfieldapprox = true;
 
 angles  = linspace(0,2*pi,nangles);
@@ -35,14 +38,15 @@ xyPolyTx = [xTx' yTx'];
 %              -15.09  2.00 ];
 
 HankelFilterName = 'kk201Hankel.txt';    
-GQorder                = 3;   % number of gauss quadrature points per Tx wire segment for line integration
+%HankelFilterName = 'wer201Hankel.txt';    
+GQorder                = 5;   % number of gauss quadrature points per Tx wire segment for line integration
 nSplinePointsPerDecade = 10;  % number of spline points per decade of ranges for spline interpolation of Bz(r)
 
 
 % For testing far field solution, make the transmitter polygon tiny so that
 % it looks like a point dipole at the receiver location:
 if farfieldapprox
-    xyPolyTx = xyPolyTx/100;
+    xyPolyTx = xyPolyTx/1000;
 end    
 % Then the fields should be nearly the same (<< 1% difference). 
 
