@@ -171,7 +171,12 @@ set(gca,'fontsize',14)
 legend('Polygon', 'Loop')
 set(gcf, 'Units','pixels', 'Position',[0 0 1200 600])
 %--------------------------------------------------------------------------
-
+figure()
+semilogx([S.LM_times;S.HM_times], 100*abs(abs(BzPoly)-abs(BzLoop))./(abs(BzLoop)),'*')
+ylabel('% diff')
+xlabel('Time (s)')
+title('polygon - loop response')
+set(gca,'fontsize',14)
 
  
  
