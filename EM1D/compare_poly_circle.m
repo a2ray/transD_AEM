@@ -172,7 +172,7 @@ legend('Polygon', 'Loop')
 set(gcf, 'Units','pixels', 'Position',[0 0 1200 600])
 %--------------------------------------------------------------------------
 figure()
-semilogx([S.LM_times;S.HM_times], 100*abs(abs(BzPoly)-abs(BzLoop))./(abs(BzLoop)),'*')
+semilogx([S.LM_times;S.HM_times], 100*abs(abs(BzPoly)-abs(BzLoop))./(abs(BzPoly)),'*')
 ylabel('% diff')
 xlabel('Time (s)')
 title('polygon - loop response')
