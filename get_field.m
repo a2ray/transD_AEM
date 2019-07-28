@@ -21,13 +21,19 @@ if S.modelHMpoly
     Bz = [Bz;BzHigh];         
 end
     
-if S.modelLMloop  
+if S.modelLMloop
+    if isfield(S,'LM_zTx') == 1
+        S.zTx = S.LM_zTx;
+    end    
     BzLow = get_LoopFields_circle_TD_FHT(S.LM_times,S.rTxLoop,S.zTx,S.rRx,S.LM_zRx,ModelSig,mu,ModelZ,...
                          S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.LM_ramp, S.lowPassFilters);
     Bz = [Bz;BzLow];
 end
                         
-if S.modelHMloop  
+if S.modelHMloop
+    if isfield(S,'HM_zTx') == 1
+        S.zTx = S.HM_zTx;
+    end
     BzHigh = get_LoopFields_circle_TD_FHT(S.HM_times,S.rTxLoop,S.zTx,S.rRx,S.HM_zRx,ModelSig,mu,ModelZ,...
                          S.HankelFilterName,S.CosSinFilterName,S.nFreqsPerDecade,S.HM_ramp, S.lowPassFilters);
     Bz = [Bz;BzHigh];         
