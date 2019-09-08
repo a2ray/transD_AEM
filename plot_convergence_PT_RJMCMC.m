@@ -21,11 +21,19 @@ for iFile = 1:nFiles
     en_ll = en_ll(1:firstEmpty-1,:);
     k_ll = k_ll(1:firstEmpty-1);
     s1 = subplot(4,2,1);
-    plot(en_ll(:,2))
-    if iFile == nFiles
-        plot(en_ll(:,2),'-k','linewidth',2)
+    plotcol = 2;    
+    if S_ll.MLerroradjust
+        plotcol=1;
     end    
-    title('RMS misfit per chain')
+    plot(en_ll(:,plotcol))
+    if iFile == nFiles
+        plot(en_ll(:,plotcol),'-k','linewidth',2)
+    end
+    if S_ll.MLerroradjust
+        title('-Log Likelihood')
+    else
+        title('RMS misfit per chain')
+    end    
     hold all
     s2 = subplot(4,2,2);
     plot(k_ll)
