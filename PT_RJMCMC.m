@@ -160,35 +160,33 @@ function PT_RJMCMC(DataFile,outputFolder,restart)
         %see if swap
         if rand<pSwap
 
-            %then swap ALL chains
-            [p,q] = determinPerm(nTemps);
-            for iTemp = 1: nTemps
-              %twoInts = randperm(nTemps,2);
-              first = p(iTemp); second = q(iTemp);
+            %then swap among ALL chains
+            for iTemp = nTemps:-1:2
+                for jTemp = rand(1:jTemp)
+                    if iTemp ~= jTemp
+                        %now find swap probability according to likelihoods
+                        logAlphaSwap = (oldMisfit{iTemp}(1) - oldMisfit{jTemp}(1))*(B(iTemp) - B(jTemp));
+                        if log(rand)<logAlphaSwap
+                            temp_x      = x{iTemp};
+                            temp_k      = k{iTemp};
+                            temp_misfit = oldMisfit{iTemp};
 
-               %now find swap probability according to likelihoods
-               logAlphaSwap = (oldMisfit{first}(1) - oldMisfit{second}(1))*(B(first) - B(second));
-               if log(rand)<logAlphaSwap
-                  %sprintf ('%d %d\n',first, second)
-                  temp_x      = x{first};
-                  temp_k      = k{first};
-                  temp_misfit = oldMisfit{first};
+                            x{iTemp}          = x{jTemp};
+                            k{iTemp}          = k{jTemp};
+                            oldMisfit{iTemp}  = oldMisfit{jTemp};
 
-                  x{first}          = x{second};
-                  k{first}          = k{second};
-                  oldMisfit{first}  = oldMisfit{second};
+                            x{jTemp}         = temp_x;
+                            k{jTemp}         = temp_k;
+                            oldMisfit{jTemp} = temp_misfit;
 
-                  x{second}         = temp_x;
-                  k{second}         = temp_k;
-                  oldMisfit{second} = temp_misfit;
+                            swapCount{iTemp}(count) = 1;
+                            swapCount{jTemp}(count) = 1;
+                        end
+                    end
+                end % jTemp
+            end % iTemp
 
-                  swapCount{first}(count) = 1;
-                  swapCount{second}(count) = 1;
-               end
-
-            end% iTemp
-
-        end%if pswap
+        end % if pswap
 
         %start parallel tempering
         %one step
