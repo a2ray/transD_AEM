@@ -12,14 +12,14 @@ if ~S.debug_prior
     n_LM = sum(idx_LM);
     n_HM = sum(idx_HM);
     r_LM = abs(S.d_LM(idx_LM)) - abs(Bz(idx_LM));
-    r_HM = abs(S.d_HM(idx_HM)) - abs(Bz(idx_HM));
+    r_HM = abs(S.d_HM(idx_HM)) - abs(Bz([logical(zeros(length(S.d_LM),1));idx_HM]));
     
     rms = 1.0;
     if (isfield(S, 'sd_LM') && isfield(S, 'sd_HM'))
         n = n_LM + n_HM;
         chi2by2 = 0.5*(norm(r_LM./S.sd_LM(idx_LM))^2 + ... 
                        norm(r_HM./S.sd_HM(idx_HM))^2);
-        rms = 2*chi2by2/n;
+        rms = sqrt(2*chi2by2/n);
     end
            
     if S.MLerroradjust
