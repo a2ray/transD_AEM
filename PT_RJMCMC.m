@@ -162,7 +162,7 @@ function PT_RJMCMC(DataFile,outputFolder,restart)
 
             %then swap among ALL chains
             for iTemp = nTemps:-1:2
-                for jTemp = rand(1:jTemp)
+                for jTemp = randi(iTemp)
                     if iTemp ~= jTemp
                         %now find swap probability according to likelihoods
                         logAlphaSwap = (oldMisfit{iTemp}(1) - oldMisfit{jTemp}(1))*(B(iTemp) - B(jTemp));

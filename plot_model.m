@@ -6,7 +6,7 @@ function h = plot_model(S,x,lw,lc)
         lw = 2;
     end    
     
-    stairs([-log10(S.rho(end)) x.rhoh], [S.z(end) x.z S.zMax], 'color', lc, 'linewidth', lw)
+    stairs(-[log10(S.rho(end)) x.rhoh], [S.z(end) x.z S.zMax], 'color', lc, 'linewidth', lw)
     hold on
 end    
 
