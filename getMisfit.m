@@ -23,10 +23,15 @@ if ~S.debug_prior
     end
            
     if S.MLerroradjust
-        r_LM = r_LM./abs(S.d_LM(idx_LM));
-        r_HM = r_HM./abs(S.d_HM(idx_HM));
-        chi2by2 = 0.5*(n_LM*log(r_LM'*r_LM) +...
-                       n_HM*log(r_HM'*r_HM));
+        chi2by2 = 0.0;
+        if ~isempty(r_LM)
+            r_LM = r_LM./abs(S.d_LM(idx_LM));
+            chi2by2 = chi2by2 + 0.5*n_LM*log(r_LM'*r_LM);
+        end
+        if ~isempty(r_HM)
+            r_HM = r_HM./abs(S.d_HM(idx_HM));
+            chi2by2 = chi2by2 + 0.5*n_HM*log(r_HM'*r_HM);
+        end    
     end              
                   
     misfit = [chi2by2 rms];
