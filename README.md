@@ -1,4 +1,7 @@
 # pt_rjmcmc_largeloop
+![Image of resistive posterior]
+(https://github.com/a2ray/pt_rjmcmc_largeloop/blob/master/post_AEM_res.png)
+
 Based on the following work, but not very actively maintained:  
 
 Ray, A., & Key, K. (2012).   
