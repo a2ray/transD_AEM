@@ -63,7 +63,7 @@ rTxLoop  = sqrt(area/pi);                           % from area = pi*r^2
 rRx      = norm(xyRx);                              % receiver is at same range from center of polygon 
 
 tic
-BzFDCirc = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
+BzFDCirc = get_LoopFields_circle_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,HankelFilterName);
 t = toc;
 fprintf('%32s %.3f s\n','get_LoopFields_FD_FHT time:',t);
 

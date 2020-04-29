@@ -1,5 +1,5 @@
 
-function Bz = get_LoopFields_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
+function Bz = get_LoopFields_circle_FD_FHT(freqs,rTxLoop,zTx,rRx,zRx,sig,mu,z,filterName)
 %
 % Computes the vertical magnetic field frequency-domain response for a
 % large loop source. 

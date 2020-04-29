@@ -11,7 +11,7 @@ nFreqsPerDecade = 15;
 LoopQuadOrder   = 3;   % Gauss quadrature order for polygon loop integration
 loopRadius      = 15; % 10 m circular loop for Christiansen formula
 
-nPolygonSides   = 50;  % number of polygon sides. more means better circle approximation. must be >2
+nPolygonSides   = 500;  % number of polygon sides. more means better circle approximation. must be >2
 
 HankelFilterName = 'kk201Hankel.txt';
 CosSinFilterName = 'kk201CosSin.txt';
@@ -36,7 +36,9 @@ L = -pi/2+linspace(0,2*pi,nPolygonSides+1);
 L = L(1:end-1);
 xyPolyTx(:,1) = loopRadius*cos(L)';
 xyPolyTx(:,2) = loopRadius*sin(L)';
- 
+rRx = norm(xyRx);
+rTxLoop  = loopRadius;                           % from area = pi*r^2
+
 % Nothing to change below here:
 sig0 = sig(2);
 theta = sqrt(4*pi*1d-7*sig0 ./ (4*tlong) );
@@ -49,13 +51,16 @@ dbzdt = dbzdt/(pi*a^2);
 % filters:
 BzPoly = get_LoopFields_TD_FHT(tlong,xyPolyTx,zTx,xyRx,zRx,sig,mu,z, HankelFilterName,CosSinFilterName,nFreqsPerDecade,LoopQuadOrder);    
 
-
+BzCircle = get_LoopFields_circle_TD_FHT(tlong,rTxLoop,zTx,rRx,zRx,sig,mu,z,...
+                         HankelFilterName,CosSinFilterName,nFreqsPerDecade);
 figure;
 subplot(2,1,1)
 loglog(tlong,-(dbzdt),'k-','linewidth',1);
-hold on;
+hold all;
 loglog(tlong,-(BzPoly),'r--','linewidth',1);
-legend('Analytic','Polygon')
+loglog(tlong,-(BzCircle),'linewidth',1);
+grid()
+legend('Analytic','Polygon','Circle')
 xlabel('Time (s)')
 title(sprintf('LoopQuadOrder=%i, nPolygonSides=%i, nFreqsPerDecade=%i',LoopQuadOrder,nPolygonSides,nFreqsPerDecade))
 set(gca,'fontsize',14)
@@ -63,6 +68,9 @@ set(gca,'fontsize',14)
 subplot(2,1,2)
 loglog(tlong,100*abs(dbzdt'-BzPoly)./abs(dbzdt)','-','linewidth',1);
 hold all
+loglog(tlong,100*abs(dbzdt'-BzCircle)./abs(dbzdt)','-','linewidth',1);
+grid()
+legend('Polygon','Circle')
 ylabel('Relative Difference (%)')
 xlabel('Time (s)')
 set(gca,'fontsize',14)
