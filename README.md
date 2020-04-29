@@ -1,11 +1,11 @@
 # Matlab Trans-D code for 1D AEM (or any 1D model) inversion
 ![Image of resistive posterior](https://github.com/a2ray/pt_rjmcmc_largeloop/blob/master/post_AEM_res.png)
 
-**Running**
+**Running**  
 Simply include the /include directory and subdirectories in your Matlab path
 Run the example scripts in the numbered sequence they are named in
 
-**References**
+**References**  
 Based on the following work, but not very actively maintained:  
 
 Blatter, D., Key, K., Ray, A., Foley, N., Tulaczyk, S., & Auken, E. (2018).  
