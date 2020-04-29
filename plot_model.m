@@ -7,6 +7,7 @@ function h = plot_model(S,x,lw,lc)
     end    
     
     stairs(-[log10(S.rho(end)) x.rhoh], [S.z(end) x.z S.zMax], 'color', lc, 'linewidth', lw)
+    xlim([-S.log10rho_max -S.log10rho_min])
     hold on
 end    
 
