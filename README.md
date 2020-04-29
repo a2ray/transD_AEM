@@ -1,5 +1,5 @@
 # pt_rjmcmc_largeloop
-Based on the following work:  
+Based on the following work, but not very actively maintained:  
 
 Ray, A., & Key, K. (2012).   
 Bayesian inversion of marine CSEM data with a trans-dimensional self  
