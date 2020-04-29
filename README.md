@@ -2,7 +2,7 @@
 ![Image of resistive posterior](https://github.com/a2ray/pt_rjmcmc_largeloop/blob/master/post_AEM_res.png)
 
 **Running**  
-Simply include the /include directory and subdirectories in your Matlab path
+Simply include the /include directory and subdirectories in your Matlab path  
 Run the example scripts in the numbered sequence they are named in
 
 **References**  
