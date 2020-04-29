@@ -6,7 +6,7 @@ Simply include the /include directory and subdirectories in your Matlab path
 Run the example scripts in the numbered sequence they are named in
 
 **References**  
-Based on the following work, but not very actively maintained:  
+Based on the following work:  
 
 Blatter, D., Key, K., Ray, A., Foley, N., Tulaczyk, S., & Auken, E. (2018).  
 Trans-dimensional Bayesian inversion of airborne transient EM data from  
