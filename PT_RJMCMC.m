@@ -223,36 +223,6 @@ function PT_RJMCMC(DataFile,outputFolder,restart)
     end
 end
 
-
-%This is for fixed dimension MCMC, which is commented out in the main
-%program - either use this or RJ_MCMC_step in main program, not both
-function [x,oldMisfit,accepted] = MCMCstep(x,oldMisfit,accepted,S,B)
-    priorViolate=0;
-    xNew = x;
-    k = length(x.z);
-    xNew.rhov = x.rhov + S.rSD1*randn(1,k+1);
-%      layer = randi(k+1);
-%      xNew.rhov(layer) = x.rhov(layer) + S.rSD1*randn;
-    %is isotropic
-    xNew.rhoh = xNew.rhov;
-
-    if  any(xNew.rhov < S.rvMin) || any(xNew.rhov > S.rvMax)
-        priorViolate=1;
-    end
-
-    if ~priorViolate
-     newMisfit = getMisfit(xNew,S);
-     logalpha = -B*(newMisfit(1) - oldMisfit(1))/2;
-    else
-        logalpha = -Inf;
-    end
-
-    if log(rand)<logalpha
-       x=xNew;
-       oldMisfit = newMisfit;
-       accepted  = accepted +1;
-    end
-end
 %RJ MCMC moves
 
 function [pertNorm,xNew,priorViolate]=birth(k,x,S)
@@ -390,14 +360,6 @@ function [xNew,priorViolate]=rhoUpdate(k,x,S,smallFlag)
 end
 
 %end RJMCMC moves
-
-function [p,q] = determinPerm(n)
-%returns index pairs p,q form strictly upper triangular matrix
-    k = randperm(n/2*(n-1));
-    q = floor(sqrt(8*(k-1) + 1)/2 + 3/2);
-    p = k - (q-1).*(q-2)/2;
-%[k;p;q]'
-end
 
 %RJ MCMC main step
 function [x,k,oldMisfit,ConvStat] = RJ_MCMC_step (x,k,oldMisfit,ConvStat,S,B)
