@@ -2,7 +2,7 @@ function [S,x,bg] = makemodel(varargin)
     % make a three region stairstep model which is easy to model
 
     %# define defaults at the beginning of the code so that you do not need to
-    opt = struct('del',1,'rho0',log10(100),'rho1',log10(10),'z1',40,'rhoA',log10(50),'delzA',20,'rho2',log10(1),'z2',100);
+    opt = struct('delz',1,'rho0',log10(100),'rho1',log10(10),'z1',40,'rhoA',log10(50),'delzA',20,'rho2',log10(1),'z2',100);
 
     %# read the acceptable names
     optionNames = fieldnames(opt);
@@ -29,7 +29,7 @@ function [S,x,bg] = makemodel(varargin)
     % function starts here
     
     % set up z, rho
-    z = 0:opt.del:opt.z2;
+    z = 0:opt.delz:opt.z2;
     rho = zeros(size(z));
     % overburden
     idx1 = z<=opt.z1;

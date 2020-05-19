@@ -64,7 +64,17 @@ S.MstepSize = linspace(10, 2, S.nTemps); %for move interface in m
 DataFile = 'Test_SynthData.mat'; 
 
 outputFolder = 'Test_SynthData';  % Name of folder to store PT_RJMCMC results
-
+% plot the model
+figure;
+plot_model(S,M,2','r')
+plot_model(S,x,2','b')
+plot_model(S,bg,2,'k')
+xlim([-S.log10rho_max -S.log10rho_min])
+set(gca,'ydir','rev')
+xlabel('Log10 S/m')
+ylabel('Depth m')
+set(gca,'fontsize',14)
+grid on
 
 %--------------------------------------------------------------------------
 %-------- You shouldn't need to change anything below here ----------------
