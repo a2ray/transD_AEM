@@ -104,6 +104,13 @@ toc
 % Plot SkyTEM responses:                     
 %
 figure;
+subplot(1,2,1);
+plot_model(S,x,2','b')
+set(gca,'ydir','rev')
+ylabel('Depth m')
+set(gca,'fontsize',14)
+grid on
+subplot(1,2,2);
 loglog(S.HM_times,abs(BzLoop),'r*','linewidth',1); 
 grid on
 ylabel('dBz/dt (V/Am^4)')
