@@ -18,7 +18,7 @@ mu = ones(size(sig));
 
 % geometry
 zTx     = -30; 
-zRx     =  50;
+zRx     =  -32;
 xyRx    = [40 0]; 
 rTx     = 17;
 nangles = 200;

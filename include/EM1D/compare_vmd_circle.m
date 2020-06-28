@@ -1,14 +1,12 @@
 clear
+addpath('../RJMCMC')
 %% model
-S.z    = [-1d6, 0];
+S.z    = [-1d5, 0];
+S.zMax = 100;
 S.rho = [1d12];
-x.z    = [20 60];
-x.rhoh = [2 1 3];
-nlayers = 20;
-x.z = [x.z(1) cumsum([x.z(end) 10*rand(1, nlayers)])];
-x.rhoh = [x.rhoh (-1+2*rand(1,nlayers))];
-x.rhov = x.rhoh;
-S.zMax = x.z(end)+0.1;
+x.z    = [20 50];
+x.rhoh = [1 0 2];
+x.rhov = [1 0 2];
 writeData = false; % won't overwrite
 
 %% SkyTEM polygon and receiver xy details
@@ -68,49 +66,7 @@ S.HM_ramp = [
             1.000E-02 0.000E+00
             ];
 
-S.HM_zRx = -35.2; % m, reciever coil vertical position (use same datum as model z).
-
-%% SkyTEM LM setup:
-S.LM_ramp=[  -1.000E-03 0.000E+00
-           -9.146E-04 6.264E-01
-           -7.879E-04 9.132E-01
-           -5.964E-04 9.905E-01
-            0.000E+00 1.000E+00
-            4.629E-07 9.891E-01
-            8.751E-07 9.426E-01
-            1.354E-06 8.545E-01
-            2.540E-06 6.053E-01
-            3.972E-06 3.030E-01
-            5.404E-06 4.077E-02
-            5.721E-06 1.632E-02
-            6.113E-06 4.419E-03
-            6.663E-06 6.323E-04
-            8.068E-06 0.000E+00
-            1.250E-03 0.000E+00
-            ];
-        
-S.LM_times=[0.00001539 0.00001900
-            0.00001939 0.00002400
-            0.00002439 0.00003100
-            0.00003139 0.00003900
-            0.00003939 0.00004900
-            0.00004939 0.00006200
-            0.00006239 0.00007800
-            0.00007839 0.00009900
-            0.00009939 0.00012500
-            0.00012539 0.00015700
-            0.00015739 0.00019900
-            0.00019939 0.00025000
-            0.00025039 0.00031500
-            0.00031539 0.00039700
-            0.00039739 0.00050000
-            0.00050039 0.00063000
-            0.00063039 0.00079300
-            0.00079339 0.00099900
-            ];
-S.LM_times = exp(mean(log(S.LM_times),2));
-
-S.LM_zRx = -37; % not sure if Rx should be same for HM and LM ...        
+S.HM_zRx = -37.0; % m, reciever coil vertical position (use same datum as model z).
 %% for both HM and LM in common
 area     = polyarea(S.xyPolyTx(:,1),S.xyPolyTx(:,2));   % circle approximation requires area of polygon
 S.rTxLoop  = sqrt(area/pi);                           % from area = pi*r^2
@@ -135,19 +91,10 @@ S.LoopQuadOrder = 3;
 % Note Bz returned below is actually dBz/dt, so the units are V/(Am^4)
 %
  
-% model polygon
-S.modelLMpoly = true;
-S.modelHMpoly = true;
-S.modelLMloop = false;
-S.modelHMloop = false;
-tic
-BzPoly = get_field(S,x);
-toc                      
-
 % model loop
 S.modelLMpoly = false;
 S.modelHMpoly = false;
-S.modelLMloop = true;
+S.modelLMloop = false;
 S.modelHMloop = true;
 tic
 BzLoop = get_field(S,x);
@@ -157,28 +104,12 @@ toc
 % Plot SkyTEM responses:                     
 %
 figure;
-subplot(1,2,1);
-plot_model(S,x,2','b')
-set(gca,'ydir','rev')
-ylabel('Depth m')
-set(gca,'fontsize',14)
-grid on
-subplot(1,2,2);
-loglog([S.LM_times;S.HM_times],abs(BzPoly),'b*','linewidth',1); hold all
-loglog([S.LM_times;S.HM_times],abs(BzLoop),'r*','linewidth',1); 
+loglog(S.HM_times,abs(BzLoop),'r*','linewidth',1); 
 grid on
 ylabel('dBz/dt (V/Am^4)')
 xlabel('Time (s)')
 set(gca,'fontsize',14)
-legend('Polygon', 'Loop')
-set(gcf, 'Units','pixels', 'Position',[0 0 1200 600])
-%--------------------------------------------------------------------------
-figure()
-semilogx([S.LM_times;S.HM_times], 100*abs(abs(BzPoly)-abs(BzLoop))./(abs(BzPoly)),'*')
-ylabel('% diff')
-xlabel('Time (s)')
-title('polygon - loop response')
-set(gca,'fontsize',14)
+
 
  
  

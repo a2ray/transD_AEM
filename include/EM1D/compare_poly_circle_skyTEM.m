@@ -199,7 +199,6 @@ figure;
 subplot(1,2,1);
 plot_model(S,x,2','b')
 set(gca,'ydir','rev')
-xlabel('Log10 ohm-m')
 ylabel('Depth m')
 set(gca,'fontsize',14)
 grid on
