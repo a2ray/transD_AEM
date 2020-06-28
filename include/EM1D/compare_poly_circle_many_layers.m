@@ -1,4 +1,5 @@
 clear
+addpath('../RJMCMC')
 %% model
 S.z    = [-1d6, 0];
 S.rho = [1d12];

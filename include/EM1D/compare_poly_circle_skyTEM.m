@@ -1,4 +1,5 @@
 clear
+addpath('../RJMCMC')
 %% SkyTEM model and data
 S.z    = [-1d6, 0];
 S.zMax = 200;
