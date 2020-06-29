@@ -47,8 +47,8 @@ function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
 %
 %--------------------------------------------------------------------------
 
-    mu0       = 4*pi*10^-7;
-    epsilon   = 8.8541878176d-12;
+    mu0 = 4*pi*10^-7;
+
 %
 % Load the digital filter weights:
 %
@@ -72,29 +72,6 @@ function Bz = get_HED_FD_FHT(freqs,zTx,rRx,zRx,theta,sig,mu,z,filterName)
         lambda      = Filter.base/rRx(iRx);
         BzK         = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx(iRx));             
         Bz(iRx,:)   = -sind(theta(iRx))/(2*pi)*sum(BzK.*FJ1,1)/rRx(iRx); 
-        
-        % Add on primary field:
-        
-        iTxlayer = find(z < zTx,1,'last');
-        iRxlayer = find(z < zRx(iRx),1,'last');
-    
-        if iRxlayer == iTxlayer
-            
-            xp = rRx(iRx)*cosd(theta(iRx));
-            yp = rRx(iRx)*sind(theta(iRx));
-            zp = zRx(iRx) - zTx;
-
-            R  = sqrt(xp.^2 + yp.^2 + zp.^2);
-            mmu  = mu0*mu(iTxlayer);
-            ssig = sig(iTxlayer);
-            w    = 2*pi*freqs;
-            k    = sqrt(-1i*w*mmu.*(ssig - 1i*w*epsilon) );
-
-            BzP =  -mmu*yp./(4*pi*R.*R.*R).*exp(-1i.*k.*R).*(1i.*k.*R + 1); % W&H eq 2.42
-             
-            Bz(iRx,:) =  Bz(iRx,:) + BzP;
-        end
-  
         
     end % loop over receivers
            
@@ -234,9 +211,9 @@ function BzKernel = getBzKernel(freqs,z,sig,mu,lambda,mu0,zTx,zRx)
  
     Fz = a(iRxlayer,:,:).*expp + b(iRxlayer,:,:).*expm;
 
-%     if iRxlayer == iTxlayer
-%         Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
-%     end
+    if iRxlayer == iTxlayer
+        Fz = Fz + (exp(-gamma(iRxlayer,:,:).*abs(zRx - zTx))./(2*gamma(iRxlayer,:,:)));  
+    end
 
     BzKernel   = mu(iRxlayer)*mu0*squeeze(Fz.*LAM(1,:,:).^2);
     
