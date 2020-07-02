@@ -4,9 +4,9 @@ addpath('../RJMCMC')
 S.z    = [-1d6, 0];
 S.zMax = 100;
 S.rho = [1d12];
-x.z    = [20 60];
-x.rhoh = [2 0 3];
-x.rhov = [2 0 3];
+x.z    = [20 50];
+x.rhoh = [1 0 2];
+x.rhov = [1 0 2];
 writeData = false; % won't overwrite
 
 %% SkyTEM polygon and receiver xy details

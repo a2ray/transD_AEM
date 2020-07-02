@@ -22,7 +22,15 @@ S.xyPolyTx = [ -15.09 -2.00 ;
  S.xyRx    = [17 0]; 
 
 %% SkyTEM HM system setup:
-%
+% LM
+S.LM_times = [ 
+1.539e-5  1.939e-5  2.439e-5  3.139e-5  3.939e-5  4.939e-5  6.239e-5  7.839e-5  9.939e-5  0.00012539  0.00015739  0.00019939  0.00025039  0.00031539  0.00039739  0.00050039  0.00063039  0.00079339
+ 1.9e-5    2.4e-5    3.1e-5    3.9e-5    4.9e-5    6.2e-5    7.8e-5    9.9e-5    0.000125  0.000157    0.000199    0.00025     0.000315    0.000397    0.0005      0.00063     0.000793    0.000999]';
+S.LM_times = exp(mean(log(S.LM_times),2));
+S.LM_ramp = [
+-0.001  -0.0009146  -0.0007879  -0.0005964  0.0  4.629e-7  8.751e-7  1.354e-6  2.54e-6  3.972e-6  5.404e-6  5.721e-6  6.113e-6  6.663e-6   8.068e-6  0.00125
+ 0.0     0.6264      0.9132      0.9905     1.0  0.9891    0.9426    0.8545    0.6053   0.303     0.04077   0.01632   0.004419  0.0006323  0.0       0.0]';
+% HM
 S.HM_times = [
             7.53900E-05 9.60000E-05
             9.63900E-05 1.22000E-04
@@ -67,6 +75,7 @@ S.HM_ramp = [
             ];
 
 S.HM_zRx = -37.0; % m, reciever coil vertical position (use same datum as model z).
+S.LM_zRx = S.HM_zRx;
 %% for both HM and LM in common
 area     = polyarea(S.xyPolyTx(:,1),S.xyPolyTx(:,2));   % circle approximation requires area of polygon
 S.rTxLoop  = sqrt(area/pi);                           % from area = pi*r^2
@@ -94,7 +103,7 @@ S.LoopQuadOrder = 3;
 % model loop
 S.modelLMpoly = false;
 S.modelHMpoly = false;
-S.modelLMloop = false;
+S.modelLMloop = true;
 S.modelHMloop = true;
 tic
 BzLoop = get_field(S,x);
@@ -102,7 +111,7 @@ toc
 
 %
 % Plot SkyTEM responses:                     
-%
+%%
 figure;
 subplot(1,2,1);
 plot_model(S,x,2','b')
@@ -111,7 +120,8 @@ ylabel('Depth m')
 set(gca,'fontsize',14)
 grid on
 subplot(1,2,2);
-loglog(S.HM_times,abs(BzLoop),'r*','linewidth',1); 
+loglog([S.LM_times; S.HM_times],abs(BzLoop),'r*','linewidth',1); 
+hold all
 grid on
 ylabel('dBz/dt (V/Am^4)')
 xlabel('Time (s)')
